@@ -6,7 +6,8 @@
     "permissions": [
         "webNavigation",
         "tabs",
-        "contextMenus"
+        "contextMenus",
+        "https://beta.character.ai/*"
     ],
     "background": {
         "service_worker": "/scripts/background.js"

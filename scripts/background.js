@@ -2,9 +2,10 @@ let cai_downloadhistorymenu__exists = false;
 chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
     if (details.url && details.url.includes("character.ai/histories")) {
         chrome.tabs.sendMessage(details.tabId, {
-            type: "GiveMeSomething",
+            type: "WatchHistoryRequest",
             utility: {}
         })
+
         //Download history menu items
         chrome.contextMenus.remove('cai_downloadhistory', AddButtons);
         function AddButtons() {

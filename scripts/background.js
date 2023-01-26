@@ -1,10 +1,40 @@
 let cai_downloadhistorymenu__exists = false;
+
+
+const interceptHistories = function () {
+    console.log("okay I am in");
+    xhook.after(function (request, response) {
+        console.log("entered!");
+        try {
+            console.log("entered!");
+            const HISTORIES_URL = "https://beta.character.ai/chat/character/histories/";
+            if (request.url === HISTORIES_URL && response.status === 200) {
+                console.log("truly entered!");
+                const jsonData = JSON.parse(response.text).histories;
+                console.log(jsonData);
+            }
+        } catch (error) {
+            console.log("Error while intercepting -> " + error);
+        }
+    });
+}
+chrome.runtime.onMessage.addListener((obj, sender, sendResponse) => {
+    const { name, args } = obj;
+    switch (name) {
+        case "InterceptHistories":
+            chrome.scripting.executeScript({
+                target: { tabId: sender.tab.id },
+                func: interceptHistories
+            });
+            break;
+        default:
+            break;
+    }
+});
+
+
 chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
     if (details.url && details.url.includes("character.ai/histories")) {
-        chrome.tabs.sendMessage(details.tabId, {
-            type: "WatchHistoryRequest",
-            utility: {}
-        })
 
         //Download history menu items
         chrome.contextMenus.remove('cai_downloadhistory', AddButtons);
@@ -37,7 +67,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
                 if (id === "caih_asHTML" || id === "caih_asJSON" || id === "caih_asTXT") {
                     chrome.tabs.sendMessage(details.tabId, {
                         type: "DownloadHistory",
-                        utility: { downloadType: id }
+                        args: { downloadType: id }
                     })
                 }
             })
@@ -45,16 +75,16 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
         }
         /*chrome.tabs.sendMessage(details.tabId, {
             type: "CreateBtns",
-            utility: { ran: times.toString() }
+            args: { ran: times.toString() }
         });*/
     }
     else {
-        if(cai_downloadhistorymenu__exists){
+        if (cai_downloadhistorymenu__exists) {
             chrome.contextMenus.remove('cai_downloadhistory');
         }
         /*chrome.tabs.sendMessage(details.tabId, {
             type: "CheckModal",
-            utility: { ran: times.toString() }
+            args: { ran: times.toString() }
         });*/
     }
 })

@@ -2,9 +2,8 @@
 
 
 (() => {
-
     Create_xhook();
-    function Create_xhook(){
+    function Create_xhook() {
         if (document.getElementById("xhook")) {
             return;
         }
@@ -13,13 +12,16 @@
         const xhookScript = document.createElement("script");
         xhookScript.id = "xhook";
         xhookScript.onload = function () {
-            interceptHistories();
+            chrome.runtime.sendMessage({name: "InterceptHistories", args: { }});
         };
         xhookScript.src = xhook_lib__url;
         firstScript.parentNode.insertBefore(xhookScript, firstScript);
     }
-    const interceptHistories = function () {
-        xhook.after((request, response) => {
+
+    //interceptHistories();
+    /*const interceptHistories = function () {
+        console.log("okay I am in");
+        xhook.after(function (request, response) {
             console.log("entered!");
             try {
                 console.log("entered!");
@@ -32,14 +34,14 @@
             } catch (error) {
                 console.log("Error while intercepting -> " + error);
             }
-        })
-    }
+        });
+    }*/
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
-        const { type, utility } = obj;
-        switch (type) {
+        const { name, args } = obj;
+        switch (name) {
             case "DownloadHistory":
-                DownloadHistory(utility.downloadType);
+                DownloadHistory(args.downloadType);
                 break;
             case "GiveMeSomething":
                 GiveMeSomething();
@@ -67,12 +69,12 @@
     }
 
 
-    const WatchHistoryRequest = function(){
+    const WatchHistoryRequest = function () {
         console.log("SuccessfullyStarted");
         var origOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function() {
+        XMLHttpRequest.prototype.open = function () {
             console.log('request started!');
-            this.addEventListener('load', function() {
+            this.addEventListener('load', function () {
                 console.log('request completed!');
                 console.log(this.readyState); //will always be 4 (ajax is completed successfully)
                 console.log(this.responseText); //whatever the response was

@@ -10,13 +10,14 @@
         const firstScript = document.getElementsByTagName("script")[0];
         const xhook_lib__url = chrome.runtime.getURL("scripts/xhook.min.js");
         const xhookScript = document.createElement("script");
+        xhookScript.crossOrigin = "anonymous";
         xhookScript.id = "xhook";
         xhookScript.onload = function () {
-            chrome.runtime.sendMessage({name: "InterceptHistories", args: { }});
         };
         xhookScript.src = xhook_lib__url;
         firstScript.parentNode.insertBefore(xhookScript, firstScript);
     }
+
 
     //interceptHistories();
     /*const interceptHistories = function () {
@@ -46,8 +47,6 @@
             case "GiveMeSomething":
                 GiveMeSomething();
                 break;
-            case "WatchHistoryRequest":
-                break;
             default:
                 break;
         }
@@ -58,29 +57,40 @@
         console.log("HEY!");
     }
 
-    const DownloadHistory = async function (dtype) {
-        console.log("worked! -> " + dtype);
-        /*const currentUrl = new URL(window.location.href);
-        const searchParams = new URLSearchParams(currentUrl.search);
-        const charID = searchParams.get('char');
-        if(!charID){
-            return;
-        }*/
+    function DownloadHistory(dtype) {
+        let histories = window.localStorage.getItem('cai_histories') != null
+            ? JSON.parse(window.localStorage.getItem('cai_histories')) //array
+            : null;
+        if (histories != null && histories.length > 0) {
+            histories = histories.reverse();
+            const chat_histories = [];
+
+            histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
+                const msgGroup = [];
+                obj.msgs.forEach(msg => {
+                    const message = msg.src.name + ": " + msg.text;
+                    msgGroup.push(message);
+                });
+                chat_histories.push(msgGroup);
+            });
+            console.log(chat_histories);
+        }
     }
 
-
-    const WatchHistoryRequest = function () {
-        console.log("SuccessfullyStarted");
-        var origOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function () {
-            console.log('request started!');
-            this.addEventListener('load', function () {
-                console.log('request completed!');
-                console.log(this.readyState); //will always be 4 (ajax is completed successfully)
-                console.log(this.responseText); //whatever the response was
-            });
-            origOpen.apply(this, arguments);
+    /*
+        const WatchHistoryRequest = function () {
+            console.log("SuccessfullyStarted");
+            var origOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function () {
+                console.log('request started!');
+                this.addEventListener('load', function () {
+                    console.log('request completed!');
+                    console.log(this.readyState); //will always be 4 (ajax is completed successfully)
+                    console.log(this.responseText); //whatever the response was
+                });
+                origOpen.apply(this, arguments);
+            };
+            console.log("SuccessfullyEnded");
         };
-        console.log("SuccessfullyEnded");
-    };
+    */
 })();

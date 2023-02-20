@@ -10,7 +10,7 @@
         "scripting"
     ],
     "host_permissions": [
-        "<all_urls>"
+        "https://beta.character.ai/*"
     ],
     "background": {
         "service_worker": "/scripts/background.js"

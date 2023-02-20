@@ -1,6 +1,6 @@
 let cai_downloadhistorymenu__exists = false;
 
-
+/*
 const interceptHistories = function () {
     console.log("okay I am in");
     xhook.after(function (request, response) {
@@ -17,15 +17,16 @@ const interceptHistories = function () {
             console.log("Error while intercepting -> " + error);
         }
     });
-}
+}*/
+
 chrome.runtime.onMessage.addListener((obj, sender, sendResponse) => {
     const { name, args } = obj;
     switch (name) {
         case "InterceptHistories":
-            chrome.scripting.executeScript({
+            /*chrome.scripting.executeScript({
                 target: { tabId: sender.tab.id },
                 func: interceptHistories
-            });
+            });*/
             break;
         default:
             break;
@@ -35,6 +36,11 @@ chrome.runtime.onMessage.addListener((obj, sender, sendResponse) => {
 
 chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
     if (details.url && details.url.includes("character.ai/histories")) {
+
+        /*chrome.tabs.sendMessage(details.tabId, {
+            name: "GiveMeSomething",
+            args: { }
+        })*/
 
         //Download history menu items
         chrome.contextMenus.remove('cai_downloadhistory', AddButtons);
@@ -66,25 +72,17 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
                 const id = info.menuItemId;
                 if (id === "caih_asHTML" || id === "caih_asJSON" || id === "caih_asTXT") {
                     chrome.tabs.sendMessage(details.tabId, {
-                        type: "DownloadHistory",
+                        name: "DownloadHistory",
                         args: { downloadType: id }
                     })
                 }
             })
             cai_downloadhistorymenu__exists = true;
         }
-        /*chrome.tabs.sendMessage(details.tabId, {
-            type: "CreateBtns",
-            args: { ran: times.toString() }
-        });*/
     }
     else {
         if (cai_downloadhistorymenu__exists) {
             chrome.contextMenus.remove('cai_downloadhistory');
         }
-        /*chrome.tabs.sendMessage(details.tabId, {
-            type: "CheckModal",
-            args: { ran: times.toString() }
-        });*/
     }
 })

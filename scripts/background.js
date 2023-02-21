@@ -1,5 +1,5 @@
 let cai_downloadhistorymenu__exists = false;
-
+let cai_downloadconversationmenu__exists = false;
 /*
 const interceptHistories = function () {
     console.log("okay I am in");
@@ -35,6 +35,11 @@ chrome.runtime.onMessage.addListener((obj, sender, sendResponse) => {
 
 
 chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
+    chrome.tabs.sendMessage(details.tabId, {
+        name: "GiveMeSomething",
+        args: { something: details.url }
+    })
+    closeAllMenus();
     if (details.url && details.url.includes("character.ai/histories")) {
 
         /*chrome.tabs.sendMessage(details.tabId, {
@@ -80,9 +85,43 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
             cai_downloadhistorymenu__exists = true;
         }
     }
-    else {
+    else if (details.url && details.url.includes("character.ai/chat") && details.url.includes("hist=")) {
+        chrome.contextMenus.remove('cai_downloadconversation', AddButtons);
+        function AddButtons() {
+            chrome.contextMenus.create({
+                id: "cai_downloadconversation",
+                title: "Character conversation",
+                contexts: ["all"]
+            })
+            chrome.contextMenus.create({
+                parentId: "cai_downloadconversation",
+                id: "cai_conversation",
+                title: "Download as Pygmalion chat",
+                contexts: ["all"]
+            })
+            chrome.contextMenus.onClicked.addListener(function (info, tab) {
+                const url = new URL(details.url);
+                const searchParams = new URLSearchParams(url.search);
+                const historyExtId = searchParams.get('hist');
+
+                const id = info.menuItemId;
+                if (id === "cai_conversation") {
+                    chrome.tabs.sendMessage(details.tabId, {
+                        name: "DownloadConversation",
+                        args: { downloadType: id, historyExtId: historyExtId }
+                    })
+                }
+            })
+            cai_downloadconversationmenu__exists = true;
+        }
+    }
+
+    function closeAllMenus() {
         if (cai_downloadhistorymenu__exists) {
             chrome.contextMenus.remove('cai_downloadhistory');
+        }
+        if (cai_downloadconversationmenu__exists) {
+            chrome.contextMenus.remove('cai_downloadconversation');
         }
     }
 })

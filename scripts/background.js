@@ -50,7 +50,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
                 title: "Character History",
                 contexts: ["all"]
             })
-            chrome.contextMenus.create({
+            /*chrome.contextMenus.create({
                 parentId: "cai_downloadhistory",
                 id: "caih_asHTML",
                 title: "Download as Page",
@@ -61,16 +61,16 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
                 id: "caih_asJSON",
                 title: "Download as JSON",
                 contexts: ["all"]
-            })
+            })*/
             chrome.contextMenus.create({
                 parentId: "cai_downloadhistory",
-                id: "caih_asTXT",
-                title: "Download as Text",
+                id: "pygmalion_example_chat",
+                title: "Pygmalion example chat",
                 contexts: ["all"]
             })
             chrome.contextMenus.onClicked.addListener(function (info, tab) {
                 const id = info.menuItemId;
-                if (id === "caih_asHTML" || id === "caih_asJSON" || id === "caih_asTXT") {
+                if (id === "caih_asHTML" || id === "caih_asJSON" || id === "pygmalion_example_chat") {
                     chrome.tabs.sendMessage(details.tabId, {
                         name: "DownloadHistory",
                         args: { downloadType: id }

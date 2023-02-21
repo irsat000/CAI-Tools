@@ -20,20 +20,16 @@
 
 
     //interceptHistories();
-    /*const interceptHistories = function () {
-        console.log("okay I am in");
+    /* Back up
+    const interceptHistories = function () {
         xhook.after(function (request, response) {
-            console.log("entered!");
-            try {
-                console.log("entered!");
-                const HISTORIES_URL = "https://beta.character.ai/chat/character/histories/";
-                if (request.url === HISTORIES_URL && response.status === 200) {
-                    console.log("truly entered!");
-                    const jsonData = JSON.parse(response.text).histories;
-                    console.log(jsonData);
+            const HISTORIES_URL = "https://beta.character.ai/chat/character/histories/";
+            if (request.url === HISTORIES_URL && response.status === 200) {
+                const jsonData = JSON.parse(response.text).histories;
+                if (jsonData != null && jsonData.length > 0) {
+                    localStorage.removeItem('cai_histories')
+                    localStorage.setItem('cai_histories', JSON.stringify(jsonData));
                 }
-            } catch (error) {
-                console.log("Error while intercepting -> " + error);
             }
         });
     }*/
@@ -44,53 +40,55 @@
             case "DownloadHistory":
                 DownloadHistory(args.downloadType);
                 break;
-            case "GiveMeSomething":
-                GiveMeSomething();
-                break;
             default:
                 break;
         }
     });
 
 
-    const GiveMeSomething = function () {
-        console.log("HEY!");
-    }
-
     function DownloadHistory(dtype) {
         let histories = window.localStorage.getItem('cai_histories') != null
             ? JSON.parse(window.localStorage.getItem('cai_histories')) //array
             : null;
-        if (histories != null && histories.length > 0) {
-            histories = histories.reverse();
-            const chat_histories = [];
+        if (histories == null || histories.length < 1) {
+            return;
+        }
 
+        let charName; //Before the reverse to increase the chances by getting the latest chat message group's character name
+        try {
+            charName = histories[0].msgs[0].src.name;
+        } catch (error) {
+            charName = null;
+        }
+
+        histories = histories.reverse();
+
+
+        if (dtype === "pygmalion_example_chat") {
+            const messageList = [];
+            //let messageString = "";
+            //messageString += message + "\n";
             histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
-                const msgGroup = [];
                 obj.msgs.forEach(msg => {
-                    const message = msg.src.name + ": " + msg.text;
-                    msgGroup.push(message);
+                    if (msg.src != null && msg.src.name != null && msg.text != null) {
+                        const message = msg.src.name + ": " + msg.text;
+                        messageList.push(message);
+                    }
                 });
-                chat_histories.push(msgGroup);
             });
-            console.log(chat_histories);
+            const messageString = messageList.join("\n");
+
+            const blob = new Blob([messageString], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            if (charName != null) {
+                charName = charName.replaceAll(' ', '_')
+                link.download = charName + '_Example.txt';;
+            } else {
+                link.download = 'ExampleChat.txt';
+            }
+            link.click();
         }
     }
-
-    /*
-        const WatchHistoryRequest = function () {
-            console.log("SuccessfullyStarted");
-            var origOpen = XMLHttpRequest.prototype.open;
-            XMLHttpRequest.prototype.open = function () {
-                console.log('request started!');
-                this.addEventListener('load', function () {
-                    console.log('request completed!');
-                    console.log(this.readyState); //will always be 4 (ajax is completed successfully)
-                    console.log(this.responseText); //whatever the response was
-                });
-                origOpen.apply(this, arguments);
-            };
-            console.log("SuccessfullyEnded");
-        };
-    */
 })();

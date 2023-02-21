@@ -27,21 +27,26 @@
             if (request.url === HISTORIES_URL && response.status === 200) {
                 const jsonData = JSON.parse(response.text).histories;
                 if (jsonData != null && jsonData.length > 0) {
-                    localStorage.removeItem('cai_histories')
-                    localStorage.setItem('cai_histories', JSON.stringify(jsonData));
+                    sessionStorage.removeItem('cai_histories')
+                    sessionStorage.setItem('cai_histories', JSON.stringify(jsonData));
                 }
             }
         });
     }*/
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
+        const url = new URL(window.location.href);
+        const searchParams = new URLSearchParams(url.search);
+
         const { name, args } = obj;
         switch (name) {
             case "DownloadHistory":
-                DownloadHistory(args.downloadType);
+                const charId = searchParams.get('char');
+                DownloadHistory(args.downloadType, charId);
                 break;
             case "DownloadConversation":
-                DownloadConversation(args.downloadType, args.historyExtId);
+                const historyExtId = searchParams.get('hist');
+                DownloadConversation(args.downloadType, historyExtId);
                 break;
             case "GiveMeSomething":
                 console.log(args.something);
@@ -52,26 +57,30 @@
     });
 
 
-    function DownloadHistory(dtype) {
-        let histories = window.localStorage.getItem('cai_history') != null
-            ? JSON.parse(window.localStorage.getItem('cai_history')) //array
+    function DownloadHistory(dtype, charId) {
+        let historyData = window.sessionStorage.getItem('cai_history_' + charId) != null
+            ? JSON.parse(window.sessionStorage.getItem('cai_history_' + charId)) //array
             : null;
-        let info = window.localStorage.getItem('cai_info') != null
-            ? JSON.parse(window.localStorage.getItem('cai_info')) //info object
+        let info = window.sessionStorage.getItem('cai_info_' + charId) != null
+            ? JSON.parse(window.sessionStorage.getItem('cai_info_' + charId)) //info object
             : null;
-
-        if (histories == null || histories.length < 1 || info == null) {
+        
+        if (historyData == null || historyData.histories.length < 1 || info == null) {
+            alert("failed")
             return;
         }
 
-        histories = histories.reverse();
+        const histories = historyData.histories.reverse();
 
         if (dtype === "pygmalion_example_chat") {
             DownloadHistory__PygmalionExampleChat(histories, info);
         }
+        else if (dtype === "pygmalion_dumper") {
+            console.log(histories);
+        }
     }
 
-    function DownloadHistory__PygmalionExampleChat(histories, info){
+    function DownloadHistory__PygmalionExampleChat(histories, info) {
         const messageList = [];
         //let messageString = "";
         //messageString += message + "\n";
@@ -97,12 +106,12 @@
 
 
 
-    function DownloadConversation(dtype, historyExtId){
-        let conversation = window.localStorage.getItem('cai_conversation_' + historyExtId) != null
-            ? JSON.parse(window.localStorage.getItem('cai_conversation_' + historyExtId))
+    function DownloadConversation(dtype, historyExtId) {
+        let conversation = window.sessionStorage.getItem('cai_conversation_' + historyExtId) != null
+            ? JSON.parse(window.sessionStorage.getItem('cai_conversation_' + historyExtId))
             : null;
         console.log(conversation)
-        if(dtype === 'cai_conversation'){
+        if (dtype === 'cai_conversation') {
 
         }
     }

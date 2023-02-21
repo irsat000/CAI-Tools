@@ -47,22 +47,18 @@
 
 
     function DownloadHistory(dtype) {
-        let histories = window.localStorage.getItem('cai_histories') != null
-            ? JSON.parse(window.localStorage.getItem('cai_histories')) //array
+        let histories = window.localStorage.getItem('cai_history') != null
+            ? JSON.parse(window.localStorage.getItem('cai_history')) //array
             : null;
-        if (histories == null || histories.length < 1) {
+        let info = window.localStorage.getItem('cai_info') != null
+            ? JSON.parse(window.localStorage.getItem('cai_info')) //info object
+            : null;
+        
+        if (histories == null || histories.length < 1 || info == null) {
             return;
         }
 
-        let charName; //Before the reverse to increase the chances by getting the latest chat message group's character name
-        try {
-            charName = histories[0].msgs[0].src.name;
-        } catch (error) {
-            charName = null;
-        }
-
         histories = histories.reverse();
-
 
         if (dtype === "pygmalion_example_chat") {
             const messageList = [];
@@ -82,10 +78,10 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            if (charName != null) {
-                charName = charName.replaceAll(' ', '_')
+            try {
+                const charName = info.name.replaceAll(' ', '_');
                 link.download = charName + '_Example.txt';;
-            } else {
+            } catch (error) {
                 link.download = 'ExampleChat.txt';
             }
             link.click();

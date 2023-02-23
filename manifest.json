@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "CAI History",
-    "description": "This extension allows you to download the chat history of your character.",
-    "version": "1.0",
+    "description": "This extension allows you to download the chat history of your character from Character AI website in various forms.",
+    "version": "0.1",
     "permissions": [
         "webNavigation",
         "tabs",
@@ -18,7 +18,8 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "/scripts/xhook.min.js"
+                "/scripts/xhook.min.js",
+                "/ReadOffline.html"
             ],
             "matches": [
                 "https://beta.character.ai/*"

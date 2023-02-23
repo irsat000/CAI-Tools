@@ -107,7 +107,27 @@
             offlineHistory.push({ id: i, messages: messages });
             i++;
         });
-        console.log(JSON.stringify(offlineHistory));
+
+        var fileUrl = chrome.runtime.getURL('ReadOffline.html');
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', fileUrl, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                var fileContents = xhr.responseText;
+                fileContents = fileContents.replace('<<<CHAT_RAW_HISTORY>>>', JSON.stringify(offlineHistory));
+
+                var blob = new Blob([fileContents], { type: 'text/html' });
+                var url = URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = info.name != null
+                    ? info.name.replaceAll(' ', '_') + '_Offline.html'
+                    : 'CAI_ReadOffline.html';
+                link.click();
+            }
+        };
+        xhr.send();
     }
 
     function DownloadHistory_ForFeedingPygmalion(historyData, info) {

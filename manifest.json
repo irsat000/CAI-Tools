@@ -1,8 +1,11 @@
 {
     "manifest_version": 3,
-    "name": "CAI History",
+    "name": "CAI Tools Beta",
     "description": "This extension allows you to download the chat history of your character from Character AI website in various forms.",
     "version": "0.1",
+    "icons": {
+        "128": "/logo128.png"
+    },
     "permissions": [
         "webNavigation",
         "tabs",

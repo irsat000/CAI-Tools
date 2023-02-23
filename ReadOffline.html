@@ -132,17 +132,20 @@
             </div>
             <div class="message-body">
                 <span class="message-sourcename">
-                    You
+                    
                 </span>
                 <p class="message-content">
-                    No you sussy baka. It's because they can't see sharp!! HAHAHA HAHAHA HAHA
+                    
                 </p>
             </div>
         </div>
     </template>
     <header>
-        <h3 class="character_name">The One Who Knocks</h3>
+        <h3 class="character_name">
+
+        </h3>
         <select class="show_conversations">
+
         </select>
     </header>
     <main>
@@ -194,6 +197,7 @@
                     else {
                         messagerMap.set('bot', msg.messager);
                         clone.querySelector('.pic-pseudo').classList.add('bot');
+                        document.querySelector('.character_name').textContent = msg.messager;
                     }
                     ChatField.appendChild(clone);
                 });

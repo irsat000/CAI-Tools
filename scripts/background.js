@@ -3,7 +3,8 @@ chrome.runtime.onInstalled.addListener(function () {
     chrome.contextMenus.create({
         id: "cai_downloadhistory",
         title: "Character History",
-        contexts: ["all"]
+        contexts: ["all"],
+        documentUrlPatterns: ["https://beta.character.ai/*"]
     })
     chrome.contextMenus.create({
         parentId: "cai_downloadhistory",
@@ -27,7 +28,7 @@ chrome.runtime.onInstalled.addListener(function () {
         const id = info.menuItemId;
         if (id === "cai_offline_read" || id === "pygmalion_dumper" || id === "pygmalion_example_chat") {
             chrome.tabs.sendMessage(tab.id, {
-                name: "DownloadHistory",
+                name: "DownloadCAIHistory",
                 args: { downloadType: id }
             })
         }

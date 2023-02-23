@@ -41,13 +41,17 @@
         const { name, args } = obj;
         switch (name) {
             case "DownloadHistory":
+                if (!window.location.href.includes("character.ai/histories")) {
+                    alert("Failed. Works only in histories page.");
+                    return;
+                }
                 const charId = searchParams.get('char');
                 DownloadHistory(args.downloadType, charId);
                 break;
-            case "DownloadConversation":
+            /*case "DownloadConversation":
                 const historyExtId = searchParams.get('hist');
                 DownloadConversation(args.downloadType, historyExtId);
-                break;
+                break;*/
             case "GiveMeSomething":
                 console.log(args.something);
                 break;
@@ -58,39 +62,76 @@
 
 
     function DownloadHistory(dtype, charId) {
-        let historyData = window.sessionStorage.getItem('cai_history_' + charId) != null
+        const historyData = window.sessionStorage.getItem('cai_history_' + charId) != null
             ? JSON.parse(window.sessionStorage.getItem('cai_history_' + charId)) //array
             : null;
         let info = window.sessionStorage.getItem('cai_info_' + charId) != null
             ? JSON.parse(window.sessionStorage.getItem('cai_info_' + charId)) //info object
             : null;
-        
+
         if (historyData == null || historyData.histories.length < 1 || info == null) {
             alert("failed")
             return;
         }
 
-        const histories = historyData.histories.reverse();
 
-        if (dtype === "pygmalion_example_chat") {
-            DownloadHistory__PygmalionExampleChat(histories, info);
+        if (dtype === "cai_offline_read") {
+            DownloadHistory_OfflineReading(historyData, info);
         }
         else if (dtype === "pygmalion_dumper") {
-            console.log(histories);
+            DownloadHistory_ForFeedingPygmalion(historyData, info);
+        }
+        else if (dtype === "pygmalion_example_chat") {
+            DownloadHistory_PygmalionExampleChat(historyData, info);
         }
     }
 
-    function DownloadHistory__PygmalionExampleChat(histories, info) {
+
+    function DownloadHistory_OfflineReading(historyData, info) {
+        const histories = historyData.histories;
+        console.log(histories);
+
+        let offlineHistory = [];
+
+        let i = 1;
+        histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
+            let messages = [];
+
+            obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
+                .forEach(msg => {
+                    messages.push({
+                        messager: msg.src.name,
+                        text: msg.text.replaceAll('\n', ' ')
+                    });
+                });
+            offlineHistory.push({ id: i, messages: messages });
+            i++;
+        });
+        console.log(JSON.stringify(offlineHistory));
+    }
+
+    function DownloadHistory_ForFeedingPygmalion(historyData, info) {
+        const blob = new Blob([JSON.stringify(historyData)], { type: 'text/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = info.name != null
+            ? info.name.replaceAll(' ', '_') + '_CaiDump.json'
+            : 'CAI_Dump.json';
+        link.click();
+    }
+
+    function DownloadHistory_PygmalionExampleChat(historyData, info) {
+        const histories = historyData.histories.reverse();
         const messageList = [];
         //let messageString = "";
         //messageString += message + "\n";
         histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
-            obj.msgs.forEach(msg => {
-                if (msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null) {
+            obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
+                .forEach(msg => {
                     const message = msg.src.name + ": " + msg.text.replaceAll('\n', ' ');
                     messageList.push(message);
-                }
-            });
+                });
         });
         const messageString = messageList.join("\n");
 
@@ -106,7 +147,7 @@
 
 
 
-    function DownloadConversation(dtype, historyExtId) {
+    /*function DownloadConversation(dtype, historyExtId) {
         let conversation = window.sessionStorage.getItem('cai_conversation_' + historyExtId) != null
             ? JSON.parse(window.sessionStorage.getItem('cai_conversation_' + historyExtId))
             : null;
@@ -114,5 +155,5 @@
         if (dtype === 'cai_conversation') {
 
         }
-    }
+    }*/
 })();

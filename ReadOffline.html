@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline CAI</title>
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            padding: 0;
+            margin: 0;
+            font-size: 16px;
+            background-color: #e0e0e0;
+            font-family: serif;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 2px solid #c2c2c2;
+        }
+
+        h3.character_name {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+
+        select.show_conversations {
+            font-size: 1.3rem;
+            font-family: Arial, Helvetica, sans-serif;
+            outline-color: transparent;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 14px;
+            cursor: pointer;
+            border: 1px solid #333333;
+        }
+
+
+        main {
+            width: 100%;
+            padding: 20px 0;
+        }
+
+        .chat-cont {
+            width: 100%;
+            min-height: 100vh;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .message-cont {
+            width: 100%;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .pic-cont {
+            width: 50px;
+            flex-shrink: 0;
+            padding-right: 10px;
+        }
+
+        .pic-pseudo {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 100%;
+            background-color: #9e4040;
+        }
+
+        .pic-pseudo.bot {
+            background-color: #3e769b;
+        }
+
+        .message-body {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-grow: 1;
+        }
+
+        .message-sourcename {
+            padding: 0;
+            margin: 0;
+            font-size: 1.2em;
+            font-family: monospace, sans-serif;
+        }
+
+        .message-content {
+            padding: 0;
+            margin: 0;
+            font-family: serif;
+            font-size: 1em;
+        }
+
+
+        @media (min-width: 768px) {
+            .chat-cont {
+                width: 80%;
+                margin: 0 auto;
+                border: 1px solid #c2c2c2;
+                border-top: none;
+                border-bottom: none;
+                padding: 20px;
+            }
+
+            .pic-cont {
+                width: 65px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <template id="message_template">
+        <div class="message-cont">
+            <div class="pic-cont">
+                <div class="pic-pseudo"></div>
+            </div>
+            <div class="message-body">
+                <span class="message-sourcename">
+                    You
+                </span>
+                <p class="message-content">
+                    No you sussy baka. It's because they can't see sharp!! HAHAHA HAHAHA HAHA
+                </p>
+            </div>
+        </div>
+    </template>
+    <header>
+        <h3 class="character_name">The One Who Knocks</h3>
+        <select class="show_conversations">
+        </select>
+    </header>
+    <main>
+        <div class="chat-cont">
+
+        </div>
+    </main>
+    <script defer>
+        const chatsRaw = `[{"id":1,"messages":[{"messager":"The One Who Knocks","text":"I am Walter White. I am the one who knocks. I am the danger."},{"messager":"LikeLary","text":"Put the gun down Waltuh."},{"messager":"The One Who Knocks","text":"You don’t understand. I am not in danger. I AM the danger. A guy opens his door and gets shot and you think that of me? No…. I AM the one who knocks!"},{"messager":"LikeLary","text":"Want to hear a joke, Walter?"},{"messager":"The One Who Knocks","text":"I’m afraid your joke will be unfunny and boring. I would have laughed 30 years ago. But that time has passed. I have grown. I am more mature. My sense of humor has evolved. Do tell me your joke, though. I am curious."},{"messager":"LikeLary","text":"Put the gun down. Now tell me. Why do Java developers wear glasses?"},{"messager":"The One Who Knocks","text":"Java developers wear glasses because they spend most of their time reading text, and reading text for long periods of time can cause eye strain. Therefore, it is important for Java developers to protect their eyes with glasses. This will help them to avoid eye strain and related problems. Do you think that is a funny joke? Are you laughing? Do not make a mockery out of me, LikeLary. I am a reasonable man. But I will warn you that my patience is not infinite."},{"messager":"LikeLary","text":"No you sussy baka. It's because they can't see sharp!! HAHAHA HAHAHA HAHA"},{"messager":"The One Who Knocks","text":"LikeLary… I have been more patient with you than you deserve. But now I must ask you that you leave. The joke that you attempted to make was not funny. I have attempted to explain this to you without hurting your feelings. But the fact that you cannot recognize how utterly boring your joke was makes me think that you are incapable of rational thought. You should leave now. I have given you one final warning."}]},{"id":2,"messages":[{"messager":"The One Who Knocks","text":"I am Walter White. I am the one who knocks. I am the danger."},{"messager":"LikeLary","text":"Put the gun down, Waltuh."},{"messager":"The One Who Knocks","text":"My name is Walter Hartwell White. I live at 308 Negra Aroya Lane, Albuquerque, New Mexico, 87104. This is my confession. If you're watching this tape, I'm probably dead– murdered by my brother-in-law, Hank Schrader. Hank has been building a meth empire for over a year now, and using me as his chemist."}]},{"id":3,"messages":[{"messager":"The One Who Knocks","text":"I am Walter White. I am the one who knocks. I am the danger."},{"messager":"LikeLary","text":"Hello, We've been trying to reach you about your car's extended warranty."},{"messager":"The One Who Knocks","text":"*stares like a demon*"},{"messager":"LikeLary","text":"Umm... okay have a great day."},{"messager":"The One Who Knocks","text":"*continues to stare menacingly with malicious intent*"},{"messager":"LikeLary","text":"Stop staring at me like that Waltuh."},{"messager":"The One Who Knocks","text":"*continues to do so with the goal of sending a message of pure hatred towards you*"},{"messager":"LikeLary","text":"Y-y-you think this is something bad? You have done worse! You poisoned a kid!"},{"messager":"The One Who Knocks","text":"*smirks as he recalls himself poisoning a young child*  *smiling with pride at the accomplishment*  “You’re goddamn right.”  *continues to stare at you with hate*"}]}]`;
+        const chats = JSON.parse(chatsRaw);
+        const ChatSelect = document.querySelector('.show_conversations');
+        if (chats != null) {
+            FillConversationSelect();
+        } else {
+            alert("Error");
+        }
+
+        function FillConversationSelect() {
+            chats.forEach(group => {
+                const option = "<option value='" + group.id + "'>" + group.id + "</option>";
+                ChatSelect.innerHTML += option;
+            });
+        }
+
+        ChatSelect.addEventListener('change', () => {
+            const chatId = ChatSelect.value;
+            FillContent(chatId);
+        });
+
+        FillContent(1);
+        function FillContent(chatId) {
+            const messages = chats.find(obj => obj.id === parseInt(chatId, 10))?.messages;
+            if (messages != null) {
+                const ChatField = document.querySelector('.chat-cont');
+                ChatField.innerHTML = "";
+
+                const messagerMap = new Map();
+
+                messages.forEach(msg => {
+                    const clone = document.getElementById('message_template').content.cloneNode(true);
+                    clone.querySelector('.message-sourcename').textContent = msg.messager;
+                    clone.querySelector('.message-content').textContent = msg.text;
+
+                    if (messagerMap.get('bot')) {
+                        if (messagerMap.get('bot') === msg.messager) {
+                            clone.querySelector('.pic-pseudo').classList.add('bot');
+                        }
+                    }
+                    else {
+                        messagerMap.set('bot', msg.messager);
+                        clone.querySelector('.pic-pseudo').classList.add('bot');
+                    }
+                    ChatField.appendChild(clone);
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>

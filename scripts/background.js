@@ -1,5 +1,4 @@
-let cai_downloadhistorymenu__exists = false;
-let cai_downloadconversationmenu__exists = false;
+
 /*
 const interceptHistories = function () {
     console.log("okay I am in");
@@ -34,56 +33,50 @@ chrome.runtime.onMessage.addListener((obj, sender, sendResponse) => {
 });
 
 
+chrome.runtime.onInstalled.addListener(function () {
+    chrome.contextMenus.create({
+        id: "cai_downloadhistory",
+        title: "Character History",
+        contexts: ["all"]
+    })
+    chrome.contextMenus.create({
+        parentId: "cai_downloadhistory",
+        id: "cai_offline_read",
+        title: "Download to read offline",
+        contexts: ["all"]
+    })
+    chrome.contextMenus.create({
+        parentId: "cai_downloadhistory",
+        id: "pygmalion_dumper",
+        title: "Pygmalion dumper",
+        contexts: ["all"]
+    })
+    chrome.contextMenus.create({
+        parentId: "cai_downloadhistory",
+        id: "pygmalion_example_chat",
+        title: "Download as Pygmalion example chat",
+        contexts: ["all"]
+    })
+    chrome.contextMenus.onClicked.addListener(function (info, tab) {
+        const id = info.menuItemId;
+        if (id === "cai_offline_read" || id === "pygmalion_dumper" || id === "pygmalion_example_chat") {
+            chrome.tabs.sendMessage(tab.id, {
+                name: "DownloadHistory",
+                args: { downloadType: id }
+            })
+        }
+    })
+});
+
 chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
     chrome.tabs.sendMessage(details.tabId, {
         name: "GiveMeSomething",
         args: { something: details.url }
     })
 
-    closeAllMenus();
     
-    if (details.url && details.url.includes("character.ai/histories")) {
-        //chrome.contextMenus.remove('cai_downloadhistory', AddButtons);
-        if(cai_downloadhistorymenu__exists == false){
-            AddButtons();
-        }
-        function AddButtons() {
-            chrome.contextMenus.create({
-                id: "cai_downloadhistory",
-                title: "Character History",
-                contexts: ["all"]
-            })
-            /*chrome.contextMenus.create({
-                parentId: "cai_downloadhistory",
-                id: "caih_asHTML",
-                title: "Download as Page",
-                contexts: ["all"]
-            })*/
-            chrome.contextMenus.create({
-                parentId: "cai_downloadhistory",
-                id: "pygmalion_dumper",
-                title: "Pygmalion dumper",
-                contexts: ["all"]
-            })
-            chrome.contextMenus.create({
-                parentId: "cai_downloadhistory",
-                id: "pygmalion_example_chat",
-                title: "Download as Pygmalion example chat",
-                contexts: ["all"]
-            })
-            chrome.contextMenus.onClicked.addListener(function (info, tab) {
-                const id = info.menuItemId;
-                if (id === "caih_asHTML" || id === "pygmalion_dumper" || id === "pygmalion_example_chat") {
-                    chrome.tabs.sendMessage(details.tabId, {
-                        name: "DownloadHistory",
-                        args: { downloadType: id }
-                    })
-                }
-            })
-            cai_downloadhistorymenu__exists = true;
-        }
-    }
-    else if (details.url && details.url.includes("character.ai/chat") && details.url.includes("hist=")) {
+    /*
+    if (details.url && details.url.includes("character.ai/chat") && details.url.includes("hist=")) {
         //chrome.contextMenus.remove('cai_downloadconversation', AddButtons);
         if(cai_downloadconversationmenu__exists == false){
             AddButtons();
@@ -111,18 +104,5 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
             })
             cai_downloadconversationmenu__exists = true;
         }
-    }
-})
-
-function closeAllMenus() {
-    /*if(chrome.contextMenus.get('cai_downloadhistory')){
-        chrome.contextMenus.remove('cai_downloadhistory');
-    }
-    if(chrome.contextMenus.get('cai_downloadconversation')){
-        chrome.contextMenus.remove('cai_downloadconversation');
-    }
-    if (cai_downloadhistorymenu__exists) {
-    }
-    if (cai_downloadconversationmenu__exists) {
     }*/
-}
+})

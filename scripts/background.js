@@ -14,8 +14,8 @@ chrome.runtime.onInstalled.addListener(function () {
     })
     chrome.contextMenus.create({
         parentId: "cai_downloadhistory",
-        id: "pygmalion_dumper",
-        title: "Pygmalion dumper",
+        id: "cai_dump",
+        title: "Character AI Dump (json)",
         contexts: ["all"]
     })
     chrome.contextMenus.create({
@@ -26,7 +26,7 @@ chrome.runtime.onInstalled.addListener(function () {
     })
     chrome.contextMenus.onClicked.addListener(function (info, tab) {
         const id = info.menuItemId;
-        if (id === "cai_offline_read" || id === "pygmalion_dumper" || id === "pygmalion_example_chat") {
+        if (id === "cai_offline_read" || id === "cai_dump" || id === "pygmalion_example_chat") {
             chrome.tabs.sendMessage(tab.id, {
                 name: "DownloadCAIHistory",
                 args: { downloadType: id }
@@ -34,3 +34,8 @@ chrome.runtime.onInstalled.addListener(function () {
         }
     })
 });
+
+/*
+    "host_permissions": [
+        "https://beta.character.ai/*"
+    ],*/

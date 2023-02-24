@@ -13,7 +13,8 @@
         xhookScript.crossOrigin = "anonymous";
         xhookScript.id = "xhook";
         xhookScript.onload = function () {
-            xhook.after(function (request, response) {
+            /*xhook.after(function (request, response) {
+                alert("helllloooo")
                 const INFO_URL = "https://beta.character.ai/chat/character/info/";
                 const HISTORIES_URL = "https://beta.character.ai/chat/character/histories/";
                 if (request.url === HISTORIES_URL && response.status === 200) {
@@ -45,7 +46,7 @@
                         sessionStorage.setItem('cai_conversation_' + historyExtId, JSON.stringify(jsonData));
                     }
                 }
-            });
+            });*/
         };
         xhookScript.src = xhook_lib__url;
         firstScript.parentNode.insertBefore(xhookScript, firstScript);
@@ -109,8 +110,12 @@
         if (dtype === "cai_offline_read") {
             DownloadHistory_OfflineReading(historyData, info);
         }
-        else if (dtype === "pygmalion_dumper") {
+        else if (dtype === "cai_dump") {
             DownloadHistory_ForFeedingPygmalion(historyData, info);
+            let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
+            if (trainPygmalion === true) {
+                window.open("https://dump.nopanda.io/", "_blank");
+            }
         }
         else if (dtype === "pygmalion_example_chat") {
             DownloadHistory_PygmalionExampleChat(historyData, info);

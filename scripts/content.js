@@ -1,56 +1,51 @@
 
 
-
 (() => {
-    Create_xhook();
-    function Create_xhook() {
-        if (document.getElementById("xhook")) {
-            return;
-        }
-        const firstScript = document.getElementsByTagName("script")[0];
-        const xhook_lib__url = chrome.runtime.getURL("scripts/xhook.min.js");
-        const xhookScript = document.createElement("script");
-        xhookScript.crossOrigin = "anonymous";
-        xhookScript.id = "xhook";
-        xhookScript.onload = function () {
-            /*xhook.after(function (request, response) {
-                alert("helllloooo")
-                const INFO_URL = "https://beta.character.ai/chat/character/info/";
-                const HISTORIES_URL = "https://beta.character.ai/chat/character/histories/";
-                if (request.url === HISTORIES_URL && response.status === 200) {
-                    const charId = JSON.parse(request.body).external_id;
-                    const jsonData = JSON.parse(response.text);
-                    if (jsonData != null) {
-                        sessionStorage.removeItem('cai_history_' + charId)
-                        sessionStorage.setItem('cai_history_' + charId, JSON.stringify(jsonData));
-                    }
-                }
-                if (request.url === INFO_URL && response.status === 200) {
-                    const charId = JSON.parse(request.body).external_id;
-                    const jsonData = JSON.parse(response.text).character;
-                    if (jsonData != null) {
-                        sessionStorage.removeItem('cai_info_' + charId)
-                        sessionStorage.setItem('cai_info_' + charId, JSON.stringify(jsonData));
-                    }
-                }
-
-                const CONVERSATION_URL = "https://beta.character.ai/chat/history/msgs/user/?history_external_id=";
-                if (request.url.includes(CONVERSATION_URL) && response.status === 200) {
-                    const url = new URL(request.url);
-                    const searchParams = new URLSearchParams(url.search);
-
-                    const historyExtId = searchParams.get('history_external_id');
-                    const jsonData = JSON.parse(response.text);
-                    if (jsonData != null) {
-                        sessionStorage.removeItem('cai_conversation_' + historyExtId)
-                        sessionStorage.setItem('cai_conversation_' + historyExtId, JSON.stringify(jsonData));
-                    }
-                }
-            });*/
-        };
-        xhookScript.src = xhook_lib__url;
-        firstScript.parentNode.insertBefore(xhookScript, firstScript);
+    if (document.getElementById("xhook")) {
+        return;
     }
+    const firstScript = document.getElementsByTagName("script")[0];
+    const xhook_lib__url = chrome.runtime.getURL("scripts/xhook.min.js");
+    const xhookScript = document.createElement("script");
+    xhookScript.crossOrigin = "anonymous";
+    xhookScript.id = "xhook";
+    xhookScript.onload = function () {
+        /*xhook.after(function (request, response) {
+            const INFO_URL = "https://beta.character.ai/chat/character/info/";
+            const HISTORIES_URL = "https://beta.character.ai/chat/character/histories/";
+            if (request.url === HISTORIES_URL && response.status === 200) {
+                const charId = JSON.parse(request.body).external_id;
+                const jsonData = JSON.parse(response.text);
+                if (jsonData != null) {
+                    localStorage.removeItem('cai_history_' + charId)
+                    localStorage.setItem('cai_history_' + charId, JSON.stringify(jsonData));
+                }
+            }
+            if (request.url === INFO_URL && response.status === 200) {
+                const charId = JSON.parse(request.body).external_id;
+                const jsonData = JSON.parse(response.text).character;
+                if (jsonData != null) {
+                    localStorage.removeItem('cai_info_' + charId)
+                    localStorage.setItem('cai_info_' + charId, JSON.stringify(jsonData));
+                }
+            }
+
+            const CONVERSATION_URL = "https://beta.character.ai/chat/history/msgs/user/?history_external_id=";
+            if (request.url.includes(CONVERSATION_URL) && response.status === 200) {
+                const url = new URL(request.url);
+                const searchParams = new URLSearchParams(url.search);
+
+                const historyExtId = searchParams.get('history_external_id');
+                const jsonData = JSON.parse(response.text);
+                if (jsonData != null) {
+                    localStorage.removeItem('cai_conversation_' + historyExtId)
+                    localStorage.setItem('cai_conversation_' + historyExtId, JSON.stringify(jsonData));
+                }
+            }
+        });*/
+    };
+    xhookScript.src = xhook_lib__url;
+    firstScript.parentNode.insertBefore(xhookScript, firstScript);
 
 
     //interceptHistories();
@@ -61,8 +56,8 @@
             if (request.url === HISTORIES_URL && response.status === 200) {
                 const jsonData = JSON.parse(response.text).histories;
                 if (jsonData != null && jsonData.length > 0) {
-                    sessionStorage.removeItem('cai_histories')
-                    sessionStorage.setItem('cai_histories', JSON.stringify(jsonData));
+                    localStorage.removeItem('cai_histories')
+                    localStorage.setItem('cai_histories', JSON.stringify(jsonData));
                 }
             }
         });
@@ -93,11 +88,11 @@
 
 
     function DownloadHistory(dtype, charId) {
-        const historyData = window.sessionStorage.getItem('cai_history_' + charId) != null
-            ? JSON.parse(window.sessionStorage.getItem('cai_history_' + charId)) //array
+        const historyData = window.localStorage.getItem('cai_history_' + charId) != null
+            ? JSON.parse(window.localStorage.getItem('cai_history_' + charId)) //array
             : null;
-        let info = window.sessionStorage.getItem('cai_info_' + charId) != null
-            ? JSON.parse(window.sessionStorage.getItem('cai_info_' + charId)) //info object
+        let info = window.localStorage.getItem('cai_info_' + charId) != null
+            ? JSON.parse(window.localStorage.getItem('cai_info_' + charId)) //info object
             : null;
 
         if (historyData == null || historyData.histories.length < 1 || info == null) {
@@ -112,13 +107,18 @@
         }
         else if (dtype === "cai_dump") {
             DownloadHistory_ForFeedingPygmalion(historyData, info);
-            let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
-            if (trainPygmalion === true) {
-                window.open("https://dump.nopanda.io/", "_blank");
+            //If not registered, askToFeedPygmalion should be true
+            if (window.sessionStorage.getItem('askToFeedPygmalion') !== "false") {
+                let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
+                if (trainPygmalion === true) {
+                    window.open("https://dump.nopanda.io/", "_blank");
+                } else {
+                    window.sessionStorage.setItem('askToFeedPygmalion', 'false');
+                }
             }
         }
-        else if (dtype === "pygmalion_example_chat") {
-            DownloadHistory_PygmalionExampleChat(historyData, info);
+        else if (dtype === "example_chat") {
+            DownloadHistory_ExampleChat(historyData, info);
         }
     }
 
@@ -176,7 +176,7 @@
         link.click();
     }
 
-    function DownloadHistory_PygmalionExampleChat(historyData, info) {
+    function DownloadHistory_ExampleChat(historyData, info) {
         const histories = historyData.histories.reverse();
         const messageList = [];
         histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
@@ -201,8 +201,8 @@
 
 
     /*function DownloadConversation(dtype, historyExtId) {
-        let conversation = window.sessionStorage.getItem('cai_conversation_' + historyExtId) != null
-            ? JSON.parse(window.sessionStorage.getItem('cai_conversation_' + historyExtId))
+        let conversation = window.localStorage.getItem('cai_conversation_' + historyExtId) != null
+            ? JSON.parse(window.localStorage.getItem('cai_conversation_' + historyExtId))
             : null;
         console.log(conversation)
         if (dtype === 'cai_conversation') {

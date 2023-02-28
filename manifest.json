@@ -2,14 +2,12 @@
     "manifest_version": 3,
     "name": "CAI Tools Beta",
     "description": "Various tools for Character AI website. Contact: muhammedirsat000@gmail.com",
-    "version": "0.1",
+    "version": "0.1.1",
     "icons": {
         "128": "/logo128.png"
     },
     "permissions": [
-        "tabs",
-        "contextMenus",
-        "scripting"
+        "contextMenus"
     ],
     "background": {
         "service_worker": "/scripts/background.js"

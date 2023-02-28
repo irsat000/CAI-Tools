@@ -1,9 +1,6 @@
 
 
 (() => {
-    if (document.getElementById("xhook")) {
-        return;
-    }
     const firstScript = document.getElementsByTagName("script")[0];
     const xhook_lib__url = chrome.runtime.getURL("scripts/xhook.min.js");
     const xhookScript = document.createElement("script");
@@ -106,7 +103,7 @@
             DownloadHistory_OfflineReading(historyData, info);
         }
         else if (dtype === "cai_dump") {
-            DownloadHistory_ForFeedingPygmalion(historyData, info);
+            DownloadHistory_AsDump(historyData, info);
             //If not registered, askToFeedPygmalion should be true
             if (window.sessionStorage.getItem('askToFeedPygmalion') !== "false") {
                 let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
@@ -136,7 +133,7 @@
                 .forEach(msg => {
                     messages.push({
                         messager: msg.src.name,
-                        text: msg.text.replaceAll('\n', ' ')
+                        text: escape(msg.text)
                     });
                 });
             offlineHistory.push({ id: i, messages: messages });
@@ -149,7 +146,10 @@
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
                 var fileContents = xhr.responseText;
-                fileContents = fileContents.replace('<<<CHAT_RAW_HISTORY>>>', JSON.stringify(offlineHistory));
+                fileContents = fileContents.replace(
+                    '<<<CHAT_RAW_HISTORY>>>',
+                    JSON.stringify(offlineHistory)
+                );
 
                 var blob = new Blob([fileContents], { type: 'text/html' });
                 var url = URL.createObjectURL(blob);
@@ -165,7 +165,7 @@
         xhr.send();
     }
 
-    function DownloadHistory_ForFeedingPygmalion(historyData, info) {
+    function DownloadHistory_AsDump(historyData, info) {
         const blob = new Blob([JSON.stringify(historyData)], { type: 'text/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -182,7 +182,7 @@
         histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
             obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
                 .forEach(msg => {
-                    const message = msg.src.name + ": " + msg.text.replaceAll('\n', ' ');
+                    const message = msg.src.name + ": " + msg.text.replaceAll('\n', ' ').replaceAll('\r', ' ');
                     messageList.push(message);
                 });
         });
@@ -199,7 +199,7 @@
     }
 
 
-
+    
     /*function DownloadConversation(dtype, historyExtId) {
         let conversation = window.localStorage.getItem('cai_conversation_' + historyExtId) != null
             ? JSON.parse(window.localStorage.getItem('cai_conversation_' + historyExtId))

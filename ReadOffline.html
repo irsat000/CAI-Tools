@@ -104,6 +104,7 @@
             margin: 0;
             font-family: serif;
             font-size: 1em;
+            white-space: pre-wrap;
         }
 
 
@@ -132,10 +133,10 @@
             </div>
             <div class="message-body">
                 <span class="message-sourcename">
-                    
+
                 </span>
                 <p class="message-content">
-                    
+
                 </p>
             </div>
         </div>
@@ -154,7 +155,7 @@
         </div>
     </main>
     <script defer>
-        const chatsRaw = `<<<CHAT_RAW_HISTORY>>>`;
+        const chatsRaw = `<<<CHAT_RAW_HISTORY>>>`; // Value gets changed in content script.
         const chats = JSON.parse(chatsRaw);
         const ChatSelect = document.querySelector('.show_conversations');
         if (chats != null) {
@@ -187,7 +188,7 @@
                 messages.forEach(msg => {
                     const clone = document.getElementById('message_template').content.cloneNode(true);
                     clone.querySelector('.message-sourcename').textContent = msg.messager;
-                    clone.querySelector('.message-content').textContent = msg.text;
+                    clone.querySelector('.message-content').textContent = unescape(msg.text);
 
                     if (messagerMap.get('bot')) {
                         if (messagerMap.get('bot') === msg.messager) {

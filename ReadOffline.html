@@ -188,7 +188,7 @@
                 messages.forEach(msg => {
                     const clone = document.getElementById('message_template').content.cloneNode(true);
                     clone.querySelector('.message-sourcename').textContent = msg.messager;
-                    clone.querySelector('.message-content').textContent = unescape(msg.text);
+                    clone.querySelector('.message-content').textContent = decodeURIComponent(msg.text);
 
                     if (messagerMap.get('bot')) {
                         if (messagerMap.get('bot') === msg.messager) {

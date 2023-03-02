@@ -133,7 +133,7 @@
                 .forEach(msg => {
                     messages.push({
                         messager: msg.src.name,
-                        text: escape(msg.text)
+                        text: encodeURIComponent(msg.text)
                     });
                 });
             offlineHistory.push({ id: i, messages: messages });
@@ -182,7 +182,7 @@
         histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
             obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
                 .forEach(msg => {
-                    const message = msg.src.name + ": " + msg.text.replaceAll('\n', ' ').replaceAll('\r', ' ');
+                    const message = msg.src.name + ": " + removeSpecialChars(msg.text);
                     messageList.push(message);
                 });
         });
@@ -198,6 +198,17 @@
         link.click();
     }
 
+    function removeSpecialChars(str) {
+        return str
+          .replace(/[\\]/g, ' ')
+          .replace(/[\"]/g, ' ')
+          .replace(/[\/]/g, ' ')
+          .replace(/[\b]/g, ' ')
+          .replace(/[\f]/g, ' ')
+          .replace(/[\n]/g, ' ')
+          .replace(/[\r]/g, ' ')
+          .replace(/[\t]/g, ' ');
+    };
 
     
     /*function DownloadConversation(dtype, historyExtId) {

@@ -93,7 +93,7 @@
             : null;
 
         if (historyData == null || historyData.histories.length < 1 || info == null) {
-            alert("failed")
+            alert("Try going back, reloading and then opening chat history again.")
             return;
         }
 

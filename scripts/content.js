@@ -97,13 +97,16 @@
             return;
         }
 
-        console.log(historyData.histories);
-
         if (dtype === "cai_offline_read") {
+            console.log(historyData);
             DownloadHistory_OfflineReading(historyData, info);
         }
-        else if (dtype === "cai_dump") {
-            DownloadHistory_AsDump(historyData, info);
+        else if (dtype === "cai_dump" || dtype === "cai_dump_anon") {
+            if (dtype === "cai_dump_anon") {
+                DownloadHistory_AsDump(historyData, info, true);
+            } else {
+                DownloadHistory_AsDump(historyData, info, false);
+            }
             //If not registered, askToFeedPygmalion should be true
             if (window.sessionStorage.getItem('askToFeedPygmalion') !== "false") {
                 let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
@@ -115,6 +118,7 @@
             }
         }
         else if (dtype === "example_chat") {
+            console.log(historyData);
             DownloadHistory_ExampleChat(historyData, info);
         }
     }
@@ -165,14 +169,47 @@
         xhr.send();
     }
 
-    function DownloadHistory_AsDump(historyData, info) {
-        const blob = new Blob([JSON.stringify(historyData)], { type: 'text/json' });
+    function DownloadHistory_AsDump(historyData, info, anon) {
+        if (anon === true) {
+            historyData.histories.filter(h => h.msgs != null && h.msgs.length > 1).forEach(history => {
+                history.msgs.forEach(msg => {
+                    if (msg.src.is_human === true) {
+                        msg.src.name = "pseudo";
+                        msg.src.user.username = "pseudo";
+                        msg.src.user.first_name = "pseudo";
+                        msg.src.user.id = 1;
+                        msg.src.user.account.avatar_file_name = "";
+                        msg.src.user.account.name = "pseudo";
+                        msg.display_name = "pseudo";
+                    }
+                    if (msg.tgt.is_human === true) {
+                        msg.tgt.name = "pseudo";
+                        msg.tgt.user.username = "pseudo";
+                        msg.tgt.user.first_name = "pseudo";
+                        msg.tgt.user.id = 1;
+                        msg.tgt.user.account.avatar_file_name = "";
+                        msg.tgt.user.account.name = "pseudo";
+                    }
+                })
+            })
+        }
+        console.log(historyData);
+
+        const Data_FinalForm = JSON.stringify(historyData);
+        const blob = new Blob([Data_FinalForm], { type: 'text/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = info.name != null
-            ? info.name.replaceAll(' ', '_') + '_CaiDump.json'
-            : 'CAI_Dump.json';
+        if (anon === true) {
+            link.download = info.name != null
+                ? info.name.replaceAll(' ', '_') + '_CaiDumpAnon.json'
+                : 'CAI_Dump_Anon.json';
+        } else {
+            link.download = info.name != null
+                ? info.name.replaceAll(' ', '_') + '_CaiDump.json'
+                : 'CAI_Dump.json';
+        }
+
         link.click();
     }
 
@@ -200,17 +237,17 @@
 
     function removeSpecialChars(str) {
         return str
-          .replace(/[\\]/g, ' ')
-          .replace(/[\"]/g, ' ')
-          .replace(/[\/]/g, ' ')
-          .replace(/[\b]/g, ' ')
-          .replace(/[\f]/g, ' ')
-          .replace(/[\n]/g, ' ')
-          .replace(/[\r]/g, ' ')
-          .replace(/[\t]/g, ' ');
+            .replace(/[\\]/g, ' ')
+            .replace(/[\"]/g, ' ')
+            .replace(/[\/]/g, ' ')
+            .replace(/[\b]/g, ' ')
+            .replace(/[\f]/g, ' ')
+            .replace(/[\n]/g, ' ')
+            .replace(/[\r]/g, ' ')
+            .replace(/[\t]/g, ' ');
     };
 
-    
+
     /*function DownloadConversation(dtype, historyExtId) {
         let conversation = window.localStorage.getItem('cai_conversation_' + historyExtId) != null
             ? JSON.parse(window.localStorage.getItem('cai_conversation_' + historyExtId))

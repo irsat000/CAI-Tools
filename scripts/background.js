@@ -14,21 +14,27 @@ chrome.runtime.onInstalled.addListener(function () {
     })
     chrome.contextMenus.create({
         parentId: "cai_downloadhistory",
+        id: "example_chat",
+        title: "Download as example chat (txt)",
+        contexts: ["all"]
+    })
+    chrome.contextMenus.create({
+        parentId: "cai_downloadhistory",
         id: "cai_dump",
         title: "History Dump (json)",
         contexts: ["all"]
     })
     chrome.contextMenus.create({
         parentId: "cai_downloadhistory",
-        id: "example_chat",
-        title: "Download as example chat (txt)",
+        id: "cai_dump_anon",
+        title: "History Dump (anonymous)",
         contexts: ["all"]
     })
 });
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
     const id = info.menuItemId;
-    if (id === "cai_offline_read" || id === "cai_dump" || id === "example_chat") {
+    if (id === "cai_offline_read" || id === "example_chat" || id === "cai_dump" || id === "cai_dump_anon") {
         chrome.tabs.sendMessage(tab.id, {
             name: "DownloadCAIHistory",
             args: { downloadType: id }

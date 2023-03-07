@@ -72,7 +72,45 @@
                     return;
                 }
                 const charId = searchParams.get('char');
-                DownloadHistory(args.downloadType, charId);
+                const historyData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_history') != null
+                    ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_history'))
+                    : null;
+
+                if (historyData == null || historyData.histories.length < 1) {
+                    alert("Data is not ready yet. Try again few seconds later.")
+                    return;
+                }
+
+                const character_name = historyData.histories.reverse()
+                    .flatMap(obj => obj.msgs.filter(msg => msg.src != null && msg.src.is_human === false && msg.src.name != null))
+                    .find(msg => msg.src.name !== null)?.src.name ?? null;
+
+                const dtype = args.downloadType;
+                switch (dtype) {
+                    case "cai_offline_read":
+                        console.log(historyData);
+                        DownloadHistory_OfflineReading(historyData, character_name);
+                        break;
+                    case "cai_dump":
+                    case "cai_dump_anon":
+                        DownloadHistory_AsDump(historyData, dtype, character_name);
+                        //If not registered, askToFeedPygmalion should be true
+                        if (window.sessionStorage.getItem('askToFeedPygmalion') !== "false") {
+                            let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
+                            if (trainPygmalion === true) {
+                                window.open("https://dump.nopanda.io/", "_blank");
+                            } else {
+                                window.sessionStorage.setItem('askToFeedPygmalion', 'false');
+                            }
+                        }
+                        break;
+                    case "example_chat":
+                        console.log(historyData);
+                        DownloadHistory_ExampleChat(historyData, character_name);
+                        break;
+                    default:
+                        break;
+                }
                 break;
             /*case "DownloadConversation":
                 const historyExtId = searchParams.get('hist');
@@ -83,48 +121,7 @@
         }
     });
 
-
-    function DownloadHistory(dtype, charId) {
-        const historyData = window.localStorage.getItem('cai_history_' + charId) != null
-            ? JSON.parse(window.localStorage.getItem('cai_history_' + charId)) //array
-            : null;
-        let info = window.localStorage.getItem('cai_info_' + charId) != null
-            ? JSON.parse(window.localStorage.getItem('cai_info_' + charId)) //info object
-            : null;
-
-        if (historyData == null || historyData.histories.length < 1 || info == null) {
-            alert("Try going back, reloading and then opening chat history again.")
-            return;
-        }
-
-        if (dtype === "cai_offline_read") {
-            console.log(historyData);
-            DownloadHistory_OfflineReading(historyData, info);
-        }
-        else if (dtype === "cai_dump" || dtype === "cai_dump_anon") {
-            if (dtype === "cai_dump_anon") {
-                DownloadHistory_AsDump(historyData, info, true);
-            } else {
-                DownloadHistory_AsDump(historyData, info, false);
-            }
-            //If not registered, askToFeedPygmalion should be true
-            if (window.sessionStorage.getItem('askToFeedPygmalion') !== "false") {
-                let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
-                if (trainPygmalion === true) {
-                    window.open("https://dump.nopanda.io/", "_blank");
-                } else {
-                    window.sessionStorage.setItem('askToFeedPygmalion', 'false');
-                }
-            }
-        }
-        else if (dtype === "example_chat") {
-            console.log(historyData);
-            DownloadHistory_ExampleChat(historyData, info);
-        }
-    }
-
-
-    function DownloadHistory_OfflineReading(historyData, info) {
+    function DownloadHistory_OfflineReading(historyData, character_name) {
         const histories = historyData.histories;
 
         let offlineHistory = [];
@@ -160,8 +157,8 @@
 
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = info.name != null
-                    ? info.name.replaceAll(' ', '_') + '_Offline.html'
+                link.download = character_name != null
+                    ? character_name.replaceAll(' ', '_') + '_Offline.html'
                     : 'CAI_ReadOffline.html';
                 link.click();
             }
@@ -169,8 +166,8 @@
         xhr.send();
     }
 
-    function DownloadHistory_AsDump(historyData, info, anon) {
-        if (anon === true) {
+    function DownloadHistory_AsDump(historyData, dtype, character_name) {
+        if (dtype === "cai_dump_anon") {
             historyData.histories.filter(h => h.msgs != null && h.msgs.length > 1).forEach(history => {
                 history.msgs.forEach(msg => {
                     if (msg.src.is_human === true) {
@@ -200,20 +197,20 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        if (anon === true) {
-            link.download = info.name != null
-                ? info.name.replaceAll(' ', '_') + '_CaiDumpAnon.json'
+        if (dtype === "cai_dump_anon") {
+            link.download = character_name != null
+                ? character_name.replaceAll(' ', '_') + '_CaiDumpAnon.json'
                 : 'CAI_Dump_Anon.json';
         } else {
-            link.download = info.name != null
-                ? info.name.replaceAll(' ', '_') + '_CaiDump.json'
+            link.download = character_name != null
+                ? character_name.replaceAll(' ', '_') + '_CaiDump.json'
                 : 'CAI_Dump.json';
         }
 
         link.click();
     }
 
-    function DownloadHistory_ExampleChat(historyData, info) {
+    function DownloadHistory_ExampleChat(historyData, character_name) {
         const histories = historyData.histories.reverse();
         const messageList = [];
         histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
@@ -229,8 +226,8 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = info.name != null
-            ? info.name.replaceAll(' ', '_') + '_Example.txt'
+        link.download = character_name != null
+            ? character_name.replaceAll(' ', '_') + '_Example.txt'
             : 'ExampleChat.txt';
         link.click();
     }

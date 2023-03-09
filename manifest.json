@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "CAI Tools Beta",
+    "name": "CAI Tools",
     "description": "Various tools for Character AI website.",
-    "version": "0.1.5",
+    "version": "1.0.0",
     "icons": {
         "128": "/logo128.png"
     },
@@ -16,7 +16,8 @@
         {
             "resources": [
                 "/scripts/xhook.min.js",
-                "/ReadOffline.html"
+                "/ReadOffline.html",
+                "/ReadCharSettings.html"
             ],
             "matches": [
                 "https://beta.character.ai/*"

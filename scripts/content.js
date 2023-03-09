@@ -44,82 +44,128 @@
     xhookScript.src = xhook_lib__url;
     firstScript.parentNode.insertBefore(xhookScript, firstScript);
 
-
-    //interceptHistories();
-    /* Back up
-    const interceptHistories = function () {
-        xhook.after(function (request, response) {
-            const HISTORIES_URL = "https://beta.character.ai/chat/character/histories/";
-            if (request.url === HISTORIES_URL && response.status === 200) {
-                const jsonData = JSON.parse(response.text).histories;
-                if (jsonData != null && jsonData.length > 0) {
-                    localStorage.removeItem('cai_histories')
-                    localStorage.setItem('cai_histories', JSON.stringify(jsonData));
-                }
-            }
-        });
-    }*/
-
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
         const url = new URL(window.location.href);
         const searchParams = new URLSearchParams(url.search);
 
         const { name, args } = obj;
-        switch (name) {
-            case "DownloadCAIHistory":
-                if (!window.location.href.includes("character.ai/histories")) {
-                    alert("Failed. Works only in histories page.");
-                    return;
-                }
-                const charId = searchParams.get('char');
-                const historyData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_history') != null
-                    ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_history'))
-                    : null;
+        if (name === "DownloadCAIHistory") {
+            if (!window.location.href.includes("character.ai/histories")) {
+                alert("Failed. Works only in histories page.");
+                return;
+            }
+            const charId = searchParams.get('char');
+            const historyData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_history') != null
+                ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_history'))
+                : null;
 
-                if (historyData == null || historyData.histories.length < 1) {
-                    alert("Data is not ready yet. Try again few seconds later.")
-                    return;
-                }
+            if (historyData == null || historyData.histories.length < 1) {
+                alert("Data is not ready yet. Try again few seconds later.")
+                return;
+            }
 
-                const character_name = historyData.histories.reverse()
-                    .flatMap(obj => obj.msgs.filter(msg => msg.src != null && msg.src.is_human === false && msg.src.name != null))
-                    .find(msg => msg.src.name !== null)?.src.name ?? null;
+            const character_name = historyData.histories.reverse()
+                .flatMap(obj => obj.msgs.filter(msg => msg.src != null && msg.src.is_human === false && msg.src.name != null))
+                .find(msg => msg.src.name !== null)?.src.name ?? null;
 
-                const dtype = args.downloadType;
-                switch (dtype) {
-                    case "cai_offline_read":
-                        console.log(historyData);
-                        DownloadHistory_OfflineReading(historyData, character_name);
-                        break;
-                    case "cai_dump":
-                    case "cai_dump_anon":
-                        DownloadHistory_AsDump(historyData, dtype, character_name);
-                        //If not registered, askToFeedPygmalion should be true
-                        if (window.sessionStorage.getItem('askToFeedPygmalion') !== "false") {
-                            let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
-                            if (trainPygmalion === true) {
-                                window.open("https://dump.nopanda.io/", "_blank");
-                            } else {
-                                window.sessionStorage.setItem('askToFeedPygmalion', 'false');
-                            }
+            const dtype = args.downloadType;
+            switch (dtype) {
+                case "cai_offline_read":
+                    console.log(historyData);
+                    DownloadHistory_OfflineReading(historyData, character_name);
+                    break;
+                case "cai_dump":
+                case "cai_dump_anon":
+                    DownloadHistory_AsDump(historyData, dtype, character_name);
+                    //If not registered, askToFeedPygmalion should be true
+                    if (window.sessionStorage.getItem('askToFeedPygmalion') !== "false") {
+                        let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
+                        if (trainPygmalion === true) {
+                            window.open("https://dump.nopanda.io/", "_blank");
+                        } else {
+                            window.sessionStorage.setItem('askToFeedPygmalion', 'false');
                         }
-                        break;
-                    case "example_chat":
-                        console.log(historyData);
-                        DownloadHistory_ExampleChat(historyData, character_name);
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            /*case "DownloadConversation":
-                const historyExtId = searchParams.get('hist');
-                DownloadConversation(args.downloadType, historyExtId);
-                break;*/
-            default:
-                break;
+                    }
+                    break;
+                case "example_chat":
+                    console.log(historyData);
+                    DownloadHistory_ExampleChat(historyData, character_name);
+                    break;
+                default:
+                    break;
+            }
         }
+        else if (name === "DownloadCharSettings") {
+            if (!window.location.href.includes("character.ai/chat") && !window.location.href.includes("character.ai/histories")) {
+                alert("Failed. Works only in conversation or histories page.");
+                return;
+            }
+
+            const charId = searchParams.get('char');
+            const settingsData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_settings') != null
+                ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_settings'))
+                : null;
+
+            if (settingsData == null || settingsData.character == null) {
+                alert("Data is not ready yet. Try again few seconds later.")
+                return;
+            }
+
+            console.log(settingsData);
+
+            const dtype = args.downloadType;
+            switch (dtype) {
+                case "cai_settings_view":
+                    DownloadSettings_View(settingsData);
+                    break;
+                case "cai_settings_json":
+                    DownloadSettings_JSON(settingsData);
+                    break;
+                default:
+                    break;
+            }
+        }
+        /*else if (name === "DownloadConversation"){
+            const historyExtId = searchParams.get('hist');
+            DownloadConversation(args.downloadType, historyExtId);
+        }*/
     });
+
+    function DownloadSettings_View(settingsData) {
+        var fileUrl = chrome.runtime.getURL('ReadCharSettings.html');
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', fileUrl, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                var fileContents = xhr.responseText;
+                fileContents = fileContents.replace(
+                    '<<<CHARACTER_SETTINGS>>>',
+                    JSON.stringify(settingsData)
+                );
+
+                var blob = new Blob([fileContents], { type: 'text/html' });
+                var url = URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = settingsData.character.name.replaceAll(' ', '_') + '_CaiSettings.html';
+                link.click();
+            }
+        };
+        xhr.send();
+    }
+
+    function DownloadSettings_JSON(settingsData) {
+        const Data_FinalForm = JSON.stringify(settingsData);
+        const blob = new Blob([Data_FinalForm], { type: 'text/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = settingsData.character.name.replaceAll(' ', '_') + '_CaiSettings.json';
+        link.click();
+    }
+
+
 
     function DownloadHistory_OfflineReading(historyData, character_name) {
         const histories = historyData.histories;

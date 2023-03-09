@@ -31,7 +31,14 @@ chrome.runtime.onInstalled.addListener(function () {
         contexts: ["all"]
     })
 
-    
+    chrome.contextMenus.create({
+        id: "cai_settings_view",
+        title: "Download Settings (viewer)",
+        contexts: ["all"],
+        documentUrlPatterns: ["https://beta.character.ai/*"]
+    })
+
+    /* Only view is required for now
     chrome.contextMenus.create({
         id: "cai_downloadHiddenSettings",
         title: "Character Settings",
@@ -49,7 +56,7 @@ chrome.runtime.onInstalled.addListener(function () {
         id: "cai_settings_json",
         title: "Download Settings (json)",
         contexts: ["all"]
-    })
+    })*/
 });
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {

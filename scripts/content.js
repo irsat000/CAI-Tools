@@ -7,39 +7,7 @@
     xhookScript.crossOrigin = "anonymous";
     xhookScript.id = "xhook";
     xhookScript.onload = function () {
-        /*xhook.after(function (request, response) {
-            const INFO_URL = "https://beta.character.ai/chat/character/info/";
-            const HISTORIES_URL = "https://beta.character.ai/chat/character/histories/";
-            if (request.url === HISTORIES_URL && response.status === 200) {
-                const charId = JSON.parse(request.body).external_id;
-                const jsonData = JSON.parse(response.text);
-                if (jsonData != null) {
-                    localStorage.removeItem('cai_history_' + charId)
-                    localStorage.setItem('cai_history_' + charId, JSON.stringify(jsonData));
-                }
-            }
-            if (request.url === INFO_URL && response.status === 200) {
-                const charId = JSON.parse(request.body).external_id;
-                const jsonData = JSON.parse(response.text).character;
-                if (jsonData != null) {
-                    localStorage.removeItem('cai_info_' + charId)
-                    localStorage.setItem('cai_info_' + charId, JSON.stringify(jsonData));
-                }
-            }
-
-            const CONVERSATION_URL = "https://beta.character.ai/chat/history/msgs/user/?history_external_id=";
-            if (request.url.includes(CONVERSATION_URL) && response.status === 200) {
-                const url = new URL(request.url);
-                const searchParams = new URLSearchParams(url.search);
-
-                const historyExtId = searchParams.get('history_external_id');
-                const jsonData = JSON.parse(response.text);
-                if (jsonData != null) {
-                    localStorage.removeItem('cai_conversation_' + historyExtId)
-                    localStorage.setItem('cai_conversation_' + historyExtId, JSON.stringify(jsonData));
-                }
-            }
-        });*/
+        //maybe for later
     };
     xhookScript.src = xhook_lib__url;
     firstScript.parentNode.insertBefore(xhookScript, firstScript);
@@ -58,9 +26,12 @@
             const historyData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_history') != null
                 ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_history'))
                 : null;
+            const charInfo = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_info') != null
+                ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_info'))
+                : null;
 
-            if (historyData == null || historyData.histories.length < 1) {
-                alert("Data is not ready yet. Try again few seconds later.")
+            if (historyData == null || historyData.histories.length < 1 || charInfo == null) {
+                alert("Data is not ready. Try again later.")
                 return;
             }
 
@@ -75,8 +46,19 @@
                     DownloadHistory_OfflineReading(historyData, character_name);
                     break;
                 case "cai_dump":
+                    DownloadHistory_AsDump(historyData, charInfo, dtype, character_name);
+                    //If not registered, askToCreateCharacter should be true
+                    if (window.sessionStorage.getItem('askToCreateCharacter') !== "false") {
+                        let createCharacter = confirm("Would you like to create a character for other AIs?");
+                        if (createCharacter === true) {
+                            window.open("https://zoltanai.github.io/character-editor/", "_blank");
+                        } else {
+                            window.sessionStorage.setItem('askToCreateCharacter', 'false');
+                        }
+                    }
+                    break;
                 case "cai_dump_anon":
-                    DownloadHistory_AsDump(historyData, dtype, character_name);
+                    DownloadHistory_AsDump(historyData, charInfo, dtype, character_name);
                     //If not registered, askToFeedPygmalion should be true
                     if (window.sessionStorage.getItem('askToFeedPygmalion') !== "false") {
                         let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
@@ -96,18 +78,18 @@
             }
         }
         else if (name === "DownloadCharSettings") {
-            if (!window.location.href.includes("character.ai/chat") && !window.location.href.includes("character.ai/histories")) {
-                alert("Failed. Works only in conversation or histories page.");
+            if (!window.location.href.includes("character.ai/histories")) {
+                alert("Failed. Works only in histories page.");
                 return;
             }
 
             const charId = searchParams.get('char');
-            const settingsData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_settings') != null
-                ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_settings'))
+            const settingsData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_info') != null
+                ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_info'))
                 : null;
 
             if (settingsData == null || settingsData.character == null) {
-                alert("Data is not ready yet. Try again few seconds later.")
+                alert("Data is not ready. Try again later.")
                 return;
             }
 
@@ -118,8 +100,8 @@
                 case "cai_settings_view":
                     DownloadSettings_View(settingsData);
                     break;
-                case "cai_settings_json":
-                    DownloadSettings_JSON(settingsData);
+                /*case "cai_settings_json":
+                    DownloadSettings_JSON(settingsData);*/
                     break;
                 default:
                     break;
@@ -155,6 +137,7 @@
         xhr.send();
     }
 
+    /* No need for this
     function DownloadSettings_JSON(settingsData) {
         const Data_FinalForm = JSON.stringify(settingsData);
         const blob = new Blob([Data_FinalForm], { type: 'text/json' });
@@ -163,7 +146,7 @@
         link.href = url;
         link.download = settingsData.character.name.replaceAll(' ', '_') + '_CaiSettings.json';
         link.click();
-    }
+    }*/
 
 
 
@@ -212,7 +195,8 @@
         xhr.send();
     }
 
-    function DownloadHistory_AsDump(historyData, dtype, character_name) {
+    function DownloadHistory_AsDump(historyData, charInfo, dtype, character_name) {
+
         if (dtype === "cai_dump_anon") {
             historyData.histories.filter(h => h.msgs != null && h.msgs.length > 1).forEach(history => {
                 history.msgs.forEach(msg => {
@@ -235,10 +219,16 @@
                     }
                 })
             })
+            charInfo.character.user__username = "[Your_Nickname]";
         }
-        console.log(historyData);
 
-        const Data_FinalForm = JSON.stringify(historyData);
+        const CharacterDump = {
+            info: charInfo,
+            histories: historyData,
+        };
+        console.log(CharacterDump);
+
+        const Data_FinalForm = JSON.stringify(CharacterDump);
         const blob = new Blob([Data_FinalForm], { type: 'text/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');

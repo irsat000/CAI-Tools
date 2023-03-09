@@ -16,6 +16,11 @@
             background-color: #e0e0e0;
             font-family: serif;
         }
+
+        pre {
+            width: 100%;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 
@@ -24,8 +29,12 @@
         const myObj = `<<<CHARACTER_SETTINGS>>>`;
         const pre = document.createElement('pre');
         for (const [key, value] of Object.entries(JSON.parse(myObj).character)) {
-            const text = document.createTextNode(`${key}: ${JSON.stringify(value)}`);
+            let text = document.createTextNode(`${key}: ${JSON.stringify(value)}`);
+            if (key === "description" || key === "definition" || key === "greeting") {
+                text = document.createTextNode(`${key}: ${decodeURIComponent(value)}`);
+            }
             pre.appendChild(text);
+            pre.appendChild(document.createElement('br'));
             pre.appendChild(document.createElement('br'));
         }
         document.body.appendChild(pre);

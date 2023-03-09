@@ -100,8 +100,8 @@
                 case "cai_settings_view":
                     DownloadSettings_View(settingsData);
                     break;
-                /*case "cai_settings_json":
-                    DownloadSettings_JSON(settingsData);*/
+                    /*case "cai_settings_json":
+                        DownloadSettings_JSON(settingsData);*/
                     break;
                 default:
                     break;
@@ -114,6 +114,13 @@
     });
 
     function DownloadSettings_View(settingsData) {
+        //prevents json errors (/r /n etc)
+        settingsData.character.description = encodeURIComponent(settingsData.character.description);
+        settingsData.character.greeting = encodeURIComponent(settingsData.character.greeting);
+        if(settingsData.character.definition != null){
+            settingsData.character.definition = encodeURIComponent(settingsData.character.definition);
+        }
+
         var fileUrl = chrome.runtime.getURL('ReadCharSettings.html');
         var xhr = new XMLHttpRequest();
         xhr.open('GET', fileUrl, true);

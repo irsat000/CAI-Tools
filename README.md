@@ -1,5 +1,9 @@
 # CAI Tools
-This chrome extension is made for the purpose of getting the data of beta.character.ai characters in various formats. Web store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje?hl=en
+This chrome extension is made for the purpose of getting the data of beta.character.ai characters in various formats. 
+###### Links
+Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje?hl=en
+
+Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
 # How to
 Navigate to View Chat Histories and right click. You will see all the features in the menu.
 # Feature List

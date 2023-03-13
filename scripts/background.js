@@ -21,13 +21,13 @@ chrome.runtime.onInstalled.addListener(function () {
     chrome.contextMenus.create({
         parentId: "cai_downloadhistory",
         id: "cai_dump",
-        title: "History Dump (json)",
+        title: "Character Dump (json)",
         contexts: ["all"]
     })
     chrome.contextMenus.create({
         parentId: "cai_downloadhistory",
         id: "cai_dump_anon",
-        title: "History Dump (anonymous)",
+        title: "Character Dump (anonymous)",
         contexts: ["all"]
     })
 

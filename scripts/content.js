@@ -31,7 +31,7 @@
                 : null;
 
             if (historyData == null || historyData.histories.length < 1 || charInfo == null) {
-                alert("Data is not ready. Try again later.")
+                alert("Data is empty or not ready. Try again later.")
                 return;
             }
 

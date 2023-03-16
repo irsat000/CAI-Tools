@@ -19,3 +19,6 @@ This is a better option if you want to hide your first name, username, display n
 It downloads an .html file. Even if a public character's settings are hidden, you can still download it and click on it to view it in browser. You will see the settings in key-value pairs. Definitions(chat examples) won't be showed unfortunately.
 ###### Passive
 Shows up to 999 chats in "View Chat Histories". You can download it all. The limit they put was originally 50.
+
+###### JSON_to_ReadOffline.html
+You can download this file individually. This can convert your existing .json character/history dumps into readable format, similar to "Download to read offline". Open this file, upload your dump in the input at middle-top of the page, that's all.

@@ -1,3 +1,11 @@
+chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
+    if (details.url && details.url.includes("character.ai/histories")) {
+        chrome.tabs.sendMessage(details.tabId, {
+            name: "Create_Options_DOM",
+            args: { }
+        })
+    }
+});
 
 chrome.runtime.onInstalled.addListener(function () {
     chrome.contextMenus.create({

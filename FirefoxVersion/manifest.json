@@ -1,5 +1,5 @@
 {
-    "manifest_version": 3,
+    "manifest_version": 2,
     "name": "CAI Tools",
     "description": "Various tools for Character AI website.",
     "version": "1.1.0",
@@ -11,19 +11,14 @@
         "webNavigation"
     ],
     "background": {
-        "service_worker": "/scripts/background.js"
+        "scripts": [
+            "/scripts/background.js"
+        ]
     },
     "web_accessible_resources": [
-        {
-            "resources": [
-                "/scripts/xhook.min.js",
-                "/ReadOffline.html",
-                "/ReadCharSettings.html"
-            ],
-            "matches": [
-                "https://beta.character.ai/*"
-            ]
-        }
+        "/scripts/xhook.min.js",
+        "/ReadOffline.html",
+        "/ReadCharSettings.html"
     ],
     "content_scripts": [
         {

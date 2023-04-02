@@ -1,3 +1,129 @@
+.cai_tools-btn {
+    position: unset;
+    align-self: flex-start;
+    right: 20px;
+    top: 20px;
+    outline: transparent;
+    border: 1px solid #fff;
+    color: #fff;
+    padding: 5px 16px;
+    border-radius: 6px;
+    transition: all 0.1s ease;
+    font-size: 1rem;
+    background-color: #06689d;
+}
 
+.cai_tools-btn:hover {
+    background-color: #2577a3;
+    opacity: 1;
+}
 
-/*Might need it for new features*/
+.cai_tools-cont {
+    display: none;
+    /*flex*/
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    background-color: #00000060;
+    align-items: center;
+    justify-content: center;
+}
+
+.cai_tools-cont.active {
+    display: flex;
+}
+
+.cai_tools {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #676767;
+    background-color: #272727;
+    color: #ffffff;
+    border-radius: 8px;
+    width: 96%;
+    max-width: 280px;
+}
+
+.cai_tools .cait-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+}
+
+.cai_tools .cait-header h4 {
+    font-size: 18px;
+    margin: 0;
+    padding: 0;
+}
+
+.cai_tools .cait-header span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+    border-radius: 50px;
+    font-size: 22px;
+    font-weight: 400;
+    font-family: monospace;
+}
+
+.cai_tools .cait-header span:hover {
+    background-color: #3b3b3b;
+}
+
+.cai_tools .cait-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 14px;
+}
+
+.cai_tools .cait-body h6 {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    font-weight: 400;
+}
+
+.cai_tools .cait-body ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.cai_tools .cait-body ul:last-child {
+    margin-bottom: unset;
+}
+
+.cai_tools .cait-body ul li {
+    display: block;
+    width: 100%;
+    padding: 10px 10px;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.cai_tools .cait-body ul li:hover {
+    background-color: #3b3b3b;
+}
+
+@media (min-width: 768px) {
+    .cai_tools-btn {
+        position: fixed;
+        opacity: 0.7;
+    }
+
+    .cai_tools {
+        max-width: 360px;
+    }
+}

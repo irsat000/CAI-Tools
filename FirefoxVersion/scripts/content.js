@@ -2,7 +2,7 @@
 
 (() => {
     const firstScript = document.getElementsByTagName("script")[0];
-    const xhook_lib__url = chrome.runtime.getURL("scripts/xhook.min.js");
+    const xhook_lib__url = browser.runtime.getURL("scripts/xhook.min.js");
     const xhookScript = document.createElement("script");
     xhookScript.crossOrigin = "anonymous";
     xhookScript.id = "xhook";
@@ -13,7 +13,7 @@
     firstScript.parentNode.insertBefore(xhookScript, firstScript);
 
 
-    chrome.runtime.onMessage.addListener((obj, sender, response) => {
+    browser.runtime.onMessage.addListener((obj, sender, response) => {
         const url = new URL(window.location.href);
         const searchParams = new URLSearchParams(url.search);
 
@@ -228,7 +228,7 @@
             i++;
         });
 
-        var fileUrl = chrome.runtime.getURL('ReadOffline.html');
+        var fileUrl = browser.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
         xhr.open('GET', fileUrl, true);
         xhr.onreadystatechange = function () {
@@ -374,7 +374,7 @@
             settingsData.character.definition = encodeURIComponent(settingsData.character.definition);
         }
 
-        var fileUrl = chrome.runtime.getURL('ReadCharSettings.html');
+        var fileUrl = browser.runtime.getURL('ReadCharSettings.html');
         var xhr = new XMLHttpRequest();
         xhr.open('GET', fileUrl, true);
         xhr.onreadystatechange = function () {

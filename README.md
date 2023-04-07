@@ -22,3 +22,6 @@ Shows up to 999 chats in "View Chat Histories". You can download it all. The lim
 
 ###### JSON_to_ReadOffline.html
 You can download this file individually. This can convert your existing .json character/history dumps into readable format, similar to "Download to read offline". Open this file, upload your dump in the input at middle-top of the page, that's all.
+
+# Screenshot
+![Ekran Alıntısı](https://user-images.githubusercontent.com/38238671/230451305-596233fa-8541-452d-8d55-60dd0bb5e557.PNG)

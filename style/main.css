@@ -79,8 +79,19 @@
 .cai_tools .cait-body {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
     padding: 10px 14px;
+}
+
+.cai_tools .cait-body span.cait_warning {
+    display: none;
+    padding: 0 10px;
+    margin-bottom: 10px;
+    color: rgb(186, 30, 30);
+    font-size: 13px;
+    font-weight: 300;
+    width: 100%;
+    text-align: center;
 }
 
 .cai_tools .cait-body h6 {
@@ -88,6 +99,16 @@
     padding: 0;
     font-size: 16px;
     font-weight: 400;
+}
+
+.cai_tools .cait-body .cait_hist_loading {
+    font-size: 0.9rem;
+    font-weight: 300;
+    margin-left: 2px;
+}
+
+.cai_tools .cait-body .cait_hist_loading.loaded {
+    display: none;
 }
 
 .cai_tools .cait-body ul {

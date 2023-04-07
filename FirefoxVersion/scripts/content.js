@@ -73,7 +73,9 @@
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
                     </div>
                     <div class="cait-body">
+                        <span class="cait_warning">*Website update - Found a way but slower now*</span>
                         <h6>Character history</h6>
+                        <span class='cait_hist_loading'>(Loading...)</span>
                         <ul>
                             <li data-cait_type='cai_offline_read'>Download to read offline</li>
                             <li data-cait_type='example_chat'>Download as example chat (txt)</li>
@@ -105,6 +107,20 @@
 
         const url = new URL(window.location.href);
         const searchParams = new URLSearchParams(url.search);
+
+        const charId = searchParams.get('char');
+        let loadingHistory = document.querySelector('meta[cai_charid="' + charId + '"][cai_history][cai_info]');
+        if (loadingHistory == null) {
+            const intervalId = setInterval(() => {
+                loadingHistory = document.querySelector('meta[cai_charid="' + charId + '"][cai_history][cai_info]');
+                if (loadingHistory != null) {
+                    clearInterval(intervalId);
+                    ch_header.querySelector('.cai_tools-cont .cait_hist_loading').classList.add('loaded');
+                }
+            }, 1000);
+        } else {
+            ch_header.querySelector('.cai_tools-cont .cait_hist_loading').classList.add('loaded');
+        }
 
         ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_offline_read' };
@@ -263,8 +279,10 @@
                         msg.src.user.username = "pseudo";
                         msg.src.user.first_name = "pseudo";
                         msg.src.user.id = 1;
-                        msg.src.user.account.avatar_file_name = "";
-                        msg.src.user.account.name = "pseudo";
+                        if(msg.src.user.account){
+                            msg.src.user.account.avatar_file_name = "";
+                            msg.src.user.account.name = "pseudo";
+                        }
                         msg.display_name = "pseudo";
                     }
                     if (msg.tgt.is_human === true) {
@@ -272,8 +290,10 @@
                         msg.tgt.user.username = "pseudo";
                         msg.tgt.user.first_name = "pseudo";
                         msg.tgt.user.id = 1;
-                        msg.tgt.user.account.avatar_file_name = "";
-                        msg.tgt.user.account.name = "pseudo";
+                        if(msg.tgt.user.account){
+                            msg.tgt.user.account.avatar_file_name = "";
+                            msg.tgt.user.account.name = "pseudo";
+                        }
                     }
                 })
             })

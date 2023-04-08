@@ -24,6 +24,9 @@
         else if (name === "Create_Options_DOM") {
             initialize_options_DOM();
         }
+        else if (name === "Reset_Modal") {
+            createHistStatusMeta(`(Loading...)`);
+        }
 
         /*else if (name === "DownloadConversation"){
             const historyExtId = searchParams.get('hist');
@@ -36,22 +39,36 @@
     // FETCH MESSAGES
 
     function createHistStatusMeta(text) {
-        const charId = getCharId();
-        if (document.querySelector('meta[cai_histstatus][cai_statusCharId="' + charId + '"]')) {
-            document.querySelector('meta[cai_histstatus][cai_statusCharId="' + charId + '"]')
+        if (document.querySelector('meta[cai_histstatus]')) {
+            document.querySelector('meta[cai_histstatus]')
                 .setAttribute('cai_histstatus', text);
         }
         else {
             const meta = document.createElement('meta');
             meta.setAttribute('cai_histstatus', text);
-            meta.setAttribute('cai_statusCharId', charId);
+            document.head.appendChild(meta);
+        }
+    }
+
+    function createFetchStartedMeta(text) {
+        const charId = getCharId();
+        if (charId == null) {
+            return;
+        }
+        if (document.querySelector('meta[cai_fetchStarted][cai_fetchStatusCharId="' + charId + '"]')) {
+            document.querySelector('meta[cai_fetchStarted][cai_fetchStatusCharId="' + charId + '"]')
+                .setAttribute('cai_fetchStarted', text);
+        }
+        else {
+            const meta = document.createElement('meta');
+            meta.setAttribute('cai_fetchStarted', text);
+            meta.setAttribute('cai_fetchStatusCharId', charId);
             document.head.appendChild(meta);
         }
     }
 
     let fetchedChatNumber = 1;
 
-    createHistStatusMeta(`(Loading...)`);
     const fetchMessages = async (nextPage, chatExternalId, chat, AccessToken, chatsLength) => {
         await new Promise(resolve => setTimeout(resolve, 200));
         let url = `https://beta.character.ai/chat/history/msgs/user/?history_external_id=${chatExternalId}`;
@@ -125,6 +142,7 @@
     };
 
     const fetchAllMessages = async (charId) => {
+        createFetchStartedMeta("true");
         const jsonData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_temphistory') != null
             ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_temphistory'))
             : null;
@@ -153,6 +171,7 @@
                 document.head.appendChild(meta);
             }
         } else {
+            createFetchStartedMeta("false");
             alert("Failed to intercept CAI. Try reloading.");
         }
     };
@@ -215,12 +234,18 @@
         `;
         ch_header.innerHTML += cai_tools_string;
 
+        const historyMeta = document.querySelector(`meta[cai_charid="${charId}"][cai_history]`);
 
         //open modal upon click on btn
         ch_header.querySelector('.cai_tools-btn').addEventListener('click', () => {
             ch_header.querySelector('.cai_tools-cont').classList.add('active');
-            fetchedChatNumber = 1;
-            fetchAllMessages(charId);
+
+            const fetchStarted = document.querySelector(`meta[cai_fetchStarted][cai_fetchStatusCharId="${charId}"]`)
+                ?.getAttribute('cai_fetchStarted');
+            if ((historyMeta == null || historyMeta.getAttribute('cai_history') == null) && fetchStarted !== "true") {
+                fetchedChatNumber = 1;
+                fetchAllMessages(charId);
+            }
         });
 
         //close modal
@@ -232,7 +257,12 @@
         });
 
         const histStatusInterval = setInterval(() => {
-            const histStatus = document.querySelector(`meta[cai_histstatus][cai_statusCharId="${charId}"]`);
+            if (historyMeta != null && historyMeta.getAttribute('cai_history') != null) {
+                ch_header.querySelector('.cai_tools-cont .cait_hist_loading').textContent = '(Ready!)';
+                clearInterval(histStatusInterval);
+                return;
+            }
+            const histStatus = document.querySelector(`meta[cai_histstatus]`);
             if (histStatus != null) {
                 const histStatusText = histStatus.getAttribute('cai_histstatus');
                 ch_header.querySelector('.cai_tools-cont .cait_hist_loading').textContent = histStatusText;

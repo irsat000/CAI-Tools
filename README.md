@@ -6,6 +6,8 @@ Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkh
 Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
 # How to
 Navigate to View Chat Histories. You can either open browser menu by right clicking or click on the CAI Tools button on top right corner. You will see all the features in the menus.
+
+You need to click on CAI Tools button once to start fetching history. Website stopped giving us the data so it will take a bit longer to load. I put the download progress in the box.
 # Feature List
 ###### Download to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.

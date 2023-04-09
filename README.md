@@ -4,10 +4,14 @@ This chrome extension is made for the purpose of getting the data of beta.charac
 Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje?hl=en
 
 Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
+# Current Status
+CharacterAI stopped giving us the data. History dump was unusable but I fixed it, though slower. However, Firefox currently has a server issue, I am unable to update the stable version. Google takes forever to review the new version. I want to ask you to be patient.
+
+Stable version is 1.2.2
 # How to
 Navigate to View Chat Histories. You can either open browser menu by right clicking or click on the CAI Tools button on top right corner. You will see all the features in the menus.
 
-You need to click on CAI Tools button once to start fetching history. Website stopped giving us the data so it will take a bit longer to load. I put the download progress in the box.
+You need to click on CAI Tools button once to start fetching history. I put the download progress in the box.
 # Feature List
 ###### Download to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.

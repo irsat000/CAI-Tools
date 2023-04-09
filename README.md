@@ -5,9 +5,9 @@ Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkh
 
 Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
 # Current Status
-CharacterAI stopped giving us the data. History dump was unusable but I fixed it, though slower. However, Firefox currently has a server issue, I am unable to update the stable version. Google takes forever to review the new version. I want to ask you to be patient.
+CharacterAI stopped giving us the history as extra. History dump was unusable until now but I fixed it, though slower.
 
-Stable version is 1.2.2
+Firefox currently has a server issue, I am unable to upload the stable version. Google takes forever to review it. I want to ask you to be patient. Stable version is 1.2.2
 # How to
 Navigate to View Chat Histories. You can either open browser menu by right clicking or click on the CAI Tools button on top right corner. You will see all the features in the menus.
 

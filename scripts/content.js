@@ -25,27 +25,35 @@
             initialize_options_DOM();
         }
         else if (name === "Reset_Modal") {
-            createHistStatusMeta(`(Loading...)`);
+            handleProgressInfoMeta(`(Loading...)`);
         }
-
-        /*else if (name === "DownloadConversation"){
-            const historyExtId = searchParams.get('hist');
-            DownloadConversation(args.downloadType, historyExtId);
-        }*/
     });
 
 
 
     // FETCH MESSAGES
 
-    function createHistStatusMeta(text) {
-        if (document.querySelector('meta[cai_histstatus]')) {
-            document.querySelector('meta[cai_histstatus]')
-                .setAttribute('cai_histstatus', text);
+    function handleProgressInfoMeta(text) {
+        if (document.querySelector('meta[cai_progressinfo]')) {
+            document.querySelector('meta[cai_progressinfo]')
+                .setAttribute('cai_progressinfo', text);
         }
         else {
             const meta = document.createElement('meta');
-            meta.setAttribute('cai_histstatus', text);
+            meta.setAttribute('cai_progressinfo', text);
+            document.head.appendChild(meta);
+        }
+    }
+
+    function createFetchStartedMeta_Conversation(text, extId){
+        if (document.querySelector('meta[cai_fetchStarted_conver][cai_fetchStatusExtId="' + extId + '"]')) {
+            document.querySelector('meta[cai_fetchStarted_conver][cai_fetchStatusExtId="' + extId + '"]')
+                .setAttribute('cai_fetchStarted_conver', text);
+        }
+        else {
+            const meta = document.createElement('meta');
+            meta.setAttribute('cai_fetchStarted_conver', text);
+            meta.setAttribute('cai_fetchStatusExtId', extId);
             document.head.appendChild(meta);
         }
     }
@@ -69,7 +77,7 @@
 
     let fetchedChatNumber = 1;
 
-    const fetchMessages = async (nextPage, chatExternalId, chat, AccessToken, chatsLength) => {
+    const fetchMessages = async ({ fetchDataType, nextPage, AccessToken, chatExternalId, chat, chatsLength, converList }) => {
         await new Promise(resolve => setTimeout(resolve, 200));
         let url = `https://beta.character.ai/chat/history/msgs/user/?history_external_id=${chatExternalId}`;
         if (nextPage > 0) {
@@ -84,60 +92,82 @@
             .then((res) => res.json())
             .then(async (data) => {
                 console.log(nextPage);
-                let newMsgGroup = [];
-                data.messages.forEach(message => {
-                    let newMessage = {
-                        annotatable: true,
-                        created: chat.created,
-                        display_name: message.src__name,
-                        id: message.id,
-                        image_rel_path: message.image_rel_path,
-                        is_alternative: message.is_alternative,
-                        src: {
-                            is_human: message.src__is_human,
-                            name: message.src__name,
-                            num_interactions: 1,
-                            user: {
-                                account: null,
-                                first_name: message.src__name,
-                                id: 1,
-                                is_staff: false,
-                                username: message.src__user__username
-                            }
-                        },
-                        text: message.text,
-                        tgt: {
-                            is_human: !message.src__is_human,
-                            name: message.tgt,
-                            num_interactions: 1,
-                            user: {
-                                account: null,
-                                first_name: message.tgt,
-                                id: 1,
-                                is_staff: false,
-                                username: message.tgt
-                            }
-                        }
-                    };
-                    newMsgGroup.push(newMessage);
-                });
 
-                chat.msgs = chat.msgs.length > 0
-                    ? [...newMsgGroup, ...chat.msgs]
-                    : newMsgGroup;
+                if (fetchDataType === "history") {
+                    let newMsgGroup = [];
+                    data.messages.forEach(message => {
+                        let newMessage = {
+                            annotatable: true,
+                            created: chat.created,
+                            display_name: message.src__name,
+                            id: message.id,
+                            image_rel_path: message.image_rel_path,
+                            is_alternative: message.is_alternative,
+                            src: {
+                                is_human: message.src__is_human,
+                                name: message.src__name,
+                                num_interactions: 1,
+                                user: {
+                                    account: null,
+                                    first_name: message.src__name,
+                                    id: 1,
+                                    is_staff: false,
+                                    username: message.src__user__username
+                                }
+                            },
+                            text: message.text,
+                            tgt: {
+                                is_human: !message.src__is_human,
+                                name: message.tgt,
+                                num_interactions: 1,
+                                user: {
+                                    account: null,
+                                    first_name: message.tgt,
+                                    id: 1,
+                                    is_staff: false,
+                                    username: message.tgt
+                                }
+                            }
+                        };
+                        newMsgGroup.push(newMessage);
+                    });
+
+                    chat.msgs = chat.msgs.length > 0
+                        ? [...newMsgGroup, ...chat.msgs]
+                        : newMsgGroup;
+                }
+                else if (fetchDataType === "conversation") {
+                    converList.push(data.messages);
+                }
 
                 if (data.has_more) {
-                    await fetchMessages(data.next_page, chatExternalId, chat, AccessToken, chatsLength);
+                    await fetchMessages({
+                        fetchDataType: fetchDataType,
+                        nextPage: data.next_page,
+                        AccessToken: AccessToken,
+                        chatExternalId: chatExternalId,
+                        chat: chat,
+                        chatsLength: chatsLength,
+                        converList: converList
+                    });
                 }
-                else {
-                    createHistStatusMeta(`(Loading... Chat ${fetchedChatNumber}/${chatsLength} completed)`);
+                else if (fetchDataType === "history") {
+                    handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${chatsLength} completed)`);
                     fetchedChatNumber++;
                 }
             })
             .catch(async (err) => {
                 console.log(err);
                 await new Promise(resolve => setTimeout(resolve, 10000));
-                return await fetchMessages(nextPage, chatExternalId, chat, AccessToken, chatsLength);
+                return await fetchMessages({
+                    fetchDataType: fetchDataType,
+                    nextPage: nextPage,
+                    AccessToken: AccessToken,
+                    chatExternalId: chatExternalId,
+                    chat: chat,
+                    chatsLength: chatsLength,
+                    converList: converList
+                });
             });
     };
 
@@ -146,19 +176,25 @@
         const jsonData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_temphistory') != null
             ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_temphistory'))
             : null;
-        const AccessToken = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_token') != null
-            ? document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_token')
-            : null;
+        const AccessToken = getAccessToken();
 
         if (jsonData != null && AccessToken != null) {
             const chatsLength = jsonData.histories.length;
             for (const chat of jsonData.histories) {
                 chat.msgs = [];
                 const chatExternalId = chat.external_id;
-                await fetchMessages(0, chatExternalId, chat, AccessToken, chatsLength);
+                await fetchMessages({
+                    fetchDataType: "history",
+                    nextPage: 0,
+                    AccessToken: AccessToken,
+                    chatExternalId: chatExternalId,
+                    chat: chat,
+                    chatsLength: chatsLength,
+                    converList: null
+                });
             }
             console.log("FINISHED");
-            createHistStatusMeta(`(Ready!)`);
+            handleProgressInfoMeta(`(Ready!)`);
 
             if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
                 document.querySelector('meta[cai_charid="' + charId + '"]')
@@ -176,6 +212,38 @@
         }
     };
 
+    const fetchConversation = async (converExtId) => {
+        createFetchStartedMeta_Conversation("true", converExtId);
+        const AccessToken = getAccessToken();
+        let converList = [];
+        await fetchMessages({
+            fetchDataType: "conversation",
+            nextPage: 0,
+            AccessToken: AccessToken,
+            chatExternalId: converExtId,
+            chat: null,
+            chatsLength: null,
+            converList: converList
+        });
+
+        if (converList.length > 0) {
+            console.log(converList);
+            console.log("FINISHED");
+            handleProgressInfoMeta(`(Ready!)`);
+
+            if (document.querySelector('meta[cai_converExtId="' + converExtId + '"]')) {
+                document.querySelector('meta[cai_converExtId="' + converExtId + '"]')
+                    .setAttribute('cai_conversation', JSON.stringify(converList));
+            }
+            else {
+                const meta = document.createElement('meta');
+                meta.setAttribute('cai_converExtId', converExtId);
+                meta.setAttribute('cai_conversation', JSON.stringify(converList));
+                document.head.appendChild(meta);
+            }
+        }
+    }
+
     // FETCH END
 
 
@@ -184,21 +252,105 @@
     function initialize_options_DOM() {
         if (window.location.href.includes("character.ai/histories")) {
             let ch_header = document.querySelector('.home-sec-header');
-            if (ch_header == null) {
-                const intervalId = setInterval(() => {
-                    ch_header = document.querySelector('.home-sec-header');
-                    if (ch_header != null) {
-                        clearInterval(intervalId);
-                        create_options_DOM(ch_header);
-                    }
-                }, 2000);
-            } else {
-                create_options_DOM(ch_header);
-            }
+            const intervalId = setInterval(() => {
+                ch_header = document.querySelector('.home-sec-header');
+                if (ch_header != null) {
+                    clearInterval(intervalId);
+                    create_options_DOM_History(ch_header);
+                }
+            }, 1000);
+        }
+        else if (window.location.href.includes("character.ai/chat")) {
+            let ch_header = document.querySelector('.chattop');
+            let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
+
+            const intervalId = setInterval(() => {
+                ch_header = document.querySelector('.chattop');
+                currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
+                if (ch_header != null && currentConverExtIdMeta != null) {
+                    clearInterval(intervalId);
+                    create_options_DOM_Conversation(ch_header);
+                }
+            }, 1000);
         }
     }
 
-    function create_options_DOM(ch_header) {
+    function create_options_DOM_Conversation(ch_header) {
+        //check if already exists
+        if (ch_header.querySelector('.cai_tools-btn')) {
+            return;
+        }
+
+        //Create cai tools in dom
+        const cai_tools_string = `
+            <button class="cai_tools-btn">CAI Tools</button>
+            <div class="cai_tools-cont">
+                <div class="cai_tools">
+                    <div class="cait-header">
+                        <h4>CAI Tools</h4><span class="cait-close">x</span>
+                    </div>
+                    <div class="cait-body">
+                        <span class="cait_warning">*Website update - Found a way but slower now*</span>
+                        <h6>This conversation</h6>
+                        <span class='cait_progressInfo'>(Loading...)</span>
+                        <ul>
+                            <li data-cait_type='ungabunga'>Download as Ungabunga chat</li>
+                            <li data-cait_type=''>Download as Tavernsomething chat</li>
+                            <li data-cait_type=''>Download as example chat</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+        ch_header.appendChild(parseHTML(cai_tools_string));
+
+        //open modal upon click on btn
+        const currentConverExtId = document.querySelector('meta[cai_currentConverExtId]').getAttribute('cai_currentConverExtId');
+        const checkExistingConver = document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`);
+        ch_header.querySelector('.cai_tools-btn').addEventListener('click', () => {
+            ch_header.querySelector('.cai_tools-cont').classList.add('active');
+
+
+            const fetchStarted = document.querySelector(`meta[cai_fetchStarted_conver][cai_fetchStatusExtId="${currentConverExtId}"]`)
+                ?.getAttribute('cai_fetchStarted_conver');
+            if ((checkExistingConver == null || checkExistingConver.getAttribute('cai_conversation') == null) && fetchStarted !== "true") {
+                fetchConversation(currentConverExtId);
+            }
+        });
+
+        //close modal
+        ch_header.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
+                close_caiToolsModal(ch_header);
+            }
+        });
+
+        const converStatusInterval = setInterval(() => {
+            if (checkExistingConver != null && checkExistingConver.getAttribute('cai_conversation') != null) {
+                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
+                clearInterval(converStatusInterval);
+                return;
+            }
+            const converStatus = document.querySelector(`meta[cai_progressinfo]`);
+            if (converStatus != null) {
+                const converStatusText = converStatus.getAttribute('cai_progressinfo');
+                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = converStatusText;
+                if (converStatusText === '(Ready!)') {
+                    clearInterval(converStatusInterval);
+                }
+            }
+        }, 1000);
+
+
+        ch_header.querySelector('.cai_tools-cont [data-cait_type="ungabunga"]').addEventListener('click', () => {
+            const args = { downloadType: 'ungabunga' };
+            DownloadConversation(args);
+            close_caiToolsModal(ch_header);
+        });
+    }
+
+    function create_options_DOM_History(ch_header) {
         const charId = getCharId();
 
         //check if already exists
@@ -217,7 +369,7 @@
                     <div class="cait-body">
                         <span class="cait_warning">*Website update - Found a way but slower now*</span>
                         <h6>Character history</h6>
-                        <span class='cait_hist_loading'>(Loading...)</span>
+                        <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
                             <li data-cait_type='cai_offline_read'>Download to read offline</li>
                             <li data-cait_type='example_chat'>Download as example chat (txt)</li>
@@ -232,7 +384,7 @@
                 </div>
             </div>
         `;
-        ch_header.innerHTML += cai_tools_string;
+        ch_header.appendChild(parseHTML(cai_tools_string));
 
         const historyMeta = document.querySelector(`meta[cai_charid="${charId}"][cai_history]`);
 
@@ -258,14 +410,14 @@
 
         const histStatusInterval = setInterval(() => {
             if (historyMeta != null && historyMeta.getAttribute('cai_history') != null) {
-                ch_header.querySelector('.cai_tools-cont .cait_hist_loading').textContent = '(Ready!)';
+                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
                 clearInterval(histStatusInterval);
                 return;
             }
-            const histStatus = document.querySelector(`meta[cai_histstatus]`);
+            const histStatus = document.querySelector(`meta[cai_progressinfo]`);
             if (histStatus != null) {
-                const histStatusText = histStatus.getAttribute('cai_histstatus');
-                ch_header.querySelector('.cai_tools-cont .cait_hist_loading').textContent = histStatusText;
+                const histStatusText = histStatus.getAttribute('cai_progressinfo');
+                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
                 if (histStatusText === '(Ready!)') {
                     clearInterval(histStatusInterval);
                 }
@@ -300,8 +452,8 @@
         });
     }
 
-    function close_caiToolsModal(ch_header) {
-        ch_header.querySelector('.cai_tools-cont').classList.remove('active');
+    function close_caiToolsModal(container) {
+        container.querySelector('.cai_tools-cont').classList.remove('active');
     }
 
     // CAI Tools - DOM - END
@@ -310,6 +462,14 @@
 
 
 
+    // CONVERSATION
+    function DownloadConversation(args) {
+        if (!window.location.href.includes("character.ai/chat")) {
+            alert("Failed. Works only in conversation page.");
+            return;
+        }
+        console.log("HELLO!");
+    }
 
 
     // HISTORY
@@ -529,9 +689,6 @@
             case "cai_settings_view":
                 DownloadSettings_View(settingsData);
                 break;
-                /*case "cai_settings_json":
-                    DownloadSettings_JSON(settingsData);*/
-                break;
             default:
                 break;
         }
@@ -588,14 +745,14 @@
         return charId;
     }
 
+    function getAccessToken() {
+        return document.querySelector('meta[cai_token]').getAttribute('cai_token');
+    }
 
-    /*function DownloadConversation(dtype, historyExtId) {
-        let conversation = window.localStorage.getItem('cai_conversation_' + historyExtId) != null
-            ? JSON.parse(window.localStorage.getItem('cai_conversation_' + historyExtId))
-            : null;
-        console.log(conversation)
-        if (dtype === 'cai_conversation') {
+    function parseHTML(html) {
+        const template = document.createElement('template');
+        template.innerHTML = html;
+        return template.content;
+    }
 
-        }
-    }*/
 })();

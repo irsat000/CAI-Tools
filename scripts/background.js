@@ -1,3 +1,4 @@
+
 chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
     if (details.url) {
         chrome.tabs.sendMessage(details.tabId, {
@@ -5,7 +6,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
             args: {}
         });
 
-        if (details.url.includes("character.ai/histories")) {
+        if (details.url.includes("character.ai/histories") || details.url.includes("character.ai/chat")) {
             chrome.tabs.sendMessage(details.tabId, {
                 name: "Create_Options_DOM",
                 args: {}
@@ -13,6 +14,9 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
         }
     }
 });
+
+/*
+DEPRECATED
 
 chrome.runtime.onInstalled.addListener(function () {
     chrome.contextMenus.create({
@@ -52,26 +56,6 @@ chrome.runtime.onInstalled.addListener(function () {
         contexts: ["all"],
         documentUrlPatterns: ["https://beta.character.ai/*"]
     })
-
-    /* Only view is required for now
-    chrome.contextMenus.create({
-        id: "cai_downloadHiddenSettings",
-        title: "Character Settings",
-        contexts: ["all"],
-        documentUrlPatterns: ["https://beta.character.ai/*"]
-    })
-    chrome.contextMenus.create({
-        parentId: "cai_downloadHiddenSettings",
-        id: "cai_settings_view",
-        title: "Download Settings (viewer)",
-        contexts: ["all"]
-    })
-    chrome.contextMenus.create({
-        parentId: "cai_downloadHiddenSettings",
-        id: "cai_settings_json",
-        title: "Download Settings (json)",
-        contexts: ["all"]
-    })*/
 });
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
@@ -97,3 +81,5 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
             break;
     }
 })
+
+*/

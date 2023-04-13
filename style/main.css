@@ -1,6 +1,7 @@
 .cai_tools-btn {
     position: unset;
     align-self: flex-start;
+    width: unset !important;
     right: 20px;
     top: 20px;
     outline: transparent;
@@ -38,6 +39,7 @@
 .cai_tools {
     display: flex;
     flex-direction: column;
+    text-align: left;
     border: 1px solid #676767;
     background-color: #272727;
     color: #ffffff;
@@ -101,14 +103,10 @@
     font-weight: 400;
 }
 
-.cai_tools .cait-body .cait_hist_loading {
+.cai_tools .cait-body .cait_progressInfo {
     font-size: 0.9rem;
     font-weight: 300;
     margin-left: 2px;
-}
-
-.cai_tools .cait-body .cait_hist_loading.loaded {
-    display: none;
 }
 
 .cai_tools .cait-body ul {

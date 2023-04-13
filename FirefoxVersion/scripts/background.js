@@ -15,6 +15,9 @@ browser.webNavigation.onHistoryStateUpdated.addListener(function (details) {
     }
 });
 
+/*
+DEPRECATED
+
 browser.contextMenus.create({
     id: "cai_downloadhistory",
     title: "Character History",
@@ -53,26 +56,6 @@ browser.contextMenus.create({
     documentUrlPatterns: ["https://beta.character.ai/*"]
 })
 
-/* Only view is required for now
-browser.contextMenus.create({
-    id: "cai_downloadHiddenSettings",
-    title: "Character Settings",
-    contexts: ["all"],
-    documentUrlPatterns: ["https://beta.character.ai/*"]
-})
-browser.contextMenus.create({
-    parentId: "cai_downloadHiddenSettings",
-    id: "cai_settings_view",
-    title: "Download Settings (viewer)",
-    contexts: ["all"]
-})
-browser.contextMenus.create({
-    parentId: "cai_downloadHiddenSettings",
-    id: "cai_settings_json",
-    title: "Download Settings (json)",
-    contexts: ["all"]
-})*/
-
 browser.contextMenus.onClicked.addListener(function (info, tab) {
     const id = info.menuItemId;
     switch (id) {
@@ -96,3 +79,4 @@ browser.contextMenus.onClicked.addListener(function (info, tab) {
             break;
     }
 })
+*/

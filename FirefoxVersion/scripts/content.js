@@ -45,7 +45,7 @@
         }
     }
 
-    function createFetchStartedMeta_Conversation(text, extId){
+    function createFetchStartedMeta_Conversation(text, extId) {
         if (document.querySelector('meta[cai_fetchStarted_conver][cai_fetchStatusExtId="' + extId + '"]')) {
             document.querySelector('meta[cai_fetchStarted_conver][cai_fetchStatusExtId="' + extId + '"]')
                 .setAttribute('cai_fetchStarted_conver', text);
@@ -137,7 +137,9 @@
                         : newMsgGroup;
                 }
                 else if (fetchDataType === "conversation") {
-                    converList.push(data.messages);
+                    converList = converList.length > 0
+                        ? [...data.messages, ...converList]
+                        : data.messages;
                 }
 
                 if (data.has_more) {
@@ -155,9 +157,25 @@
                     handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${chatsLength} completed)`);
                     fetchedChatNumber++;
                 }
+                else if (fetchDataType === "conversation") {
+                    if (converList.length > 0) {
+                        console.log("FINISHED");
+                        if (document.querySelector(`meta[cai_converExtId="${chatExternalId}"]`)) {
+                            document.querySelector(`meta[cai_converExtId="${chatExternalId}"]`)
+                                .setAttribute('cai_conversation', JSON.stringify(converList));
+                        }
+                        else {
+                            const meta = document.createElement('meta');
+                            meta.setAttribute('cai_converExtId', chatExternalId);
+                            meta.setAttribute('cai_conversation', JSON.stringify(converList));
+                            document.head.appendChild(meta);
+                        }
+                        handleProgressInfoMeta(`(Ready!)`);
+                    }
+                }
             })
             .catch(async (err) => {
-                console.log(err);
+                console.log("Error. Will try again after 10 seconds.");
                 await new Promise(resolve => setTimeout(resolve, 10000));
                 return await fetchMessages({
                     fetchDataType: fetchDataType,
@@ -171,7 +189,7 @@
             });
     };
 
-    const fetchAllMessages = async (charId) => {
+    const fetchHistory = async (charId) => {
         createFetchStartedMeta("true");
         const jsonData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_temphistory') != null
             ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_temphistory'))
@@ -193,9 +211,8 @@
                     converList: null
                 });
             }
+            console.log(jsonData);
             console.log("FINISHED");
-            handleProgressInfoMeta(`(Ready!)`);
-
             if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
                 document.querySelector('meta[cai_charid="' + charId + '"]')
                     .setAttribute('cai_history', JSON.stringify(jsonData));
@@ -206,6 +223,7 @@
                 meta.setAttribute('cai_history', JSON.stringify(jsonData));
                 document.head.appendChild(meta);
             }
+            handleProgressInfoMeta(`(Ready!)`);
         } else {
             createFetchStartedMeta("false");
             alert("Failed to intercept CAI. Try reloading.");
@@ -225,23 +243,6 @@
             chatsLength: null,
             converList: converList
         });
-
-        if (converList.length > 0) {
-            console.log(converList);
-            console.log("FINISHED");
-            handleProgressInfoMeta(`(Ready!)`);
-
-            if (document.querySelector('meta[cai_converExtId="' + converExtId + '"]')) {
-                document.querySelector('meta[cai_converExtId="' + converExtId + '"]')
-                    .setAttribute('cai_conversation', JSON.stringify(converList));
-            }
-            else {
-                const meta = document.createElement('meta');
-                meta.setAttribute('cai_converExtId', converExtId);
-                meta.setAttribute('cai_conversation', JSON.stringify(converList));
-                document.head.appendChild(meta);
-            }
-        }
     }
 
     // FETCH END
@@ -294,9 +295,8 @@
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
-                            <li data-cait_type='ungabunga'>Download as Ungabunga chat</li>
-                            <li data-cait_type=''>Download as Tavernsomething chat</li>
-                            <li data-cait_type=''>Download as example chat</li>
+                            <li data-cait_type='oobabooga'>Download as Oobabooga chat</li>
+                            <li data-cait_type='example_chat'>Download as example chat/definition</li>
                         </ul>
                     </div>
                 </div>
@@ -343,8 +343,13 @@
         }, 1000);
 
 
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="ungabunga"]').addEventListener('click', () => {
-            const args = { downloadType: 'ungabunga' };
+        ch_header.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'oobabooga' };
+            DownloadConversation(args);
+            close_caiToolsModal(ch_header);
+        });
+        ch_header.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'example_chat' };
             DownloadConversation(args);
             close_caiToolsModal(ch_header);
         });
@@ -396,7 +401,7 @@
                 ?.getAttribute('cai_fetchStarted');
             if ((historyMeta == null || historyMeta.getAttribute('cai_history') == null) && fetchStarted !== "true") {
                 fetchedChatNumber = 1;
-                fetchAllMessages(charId);
+                fetchHistory(charId);
             }
         });
 
@@ -464,21 +469,78 @@
 
     // CONVERSATION
     function DownloadConversation(args) {
-        if (!window.location.href.includes("character.ai/chat")) {
-            alert("Failed. Works only in conversation page.");
+        const chatData = document.querySelector(`meta[cai_converExtId="${args.extId}"]`)?.getAttribute('cai_conversation') != null
+            ? JSON.parse(document.querySelector(`meta[cai_converExtId="${args.extId}"]`).getAttribute('cai_conversation'))
+            : null;
+
+        if (chatData == null) {
+            alert("Data is empty or not ready. Try again later.")
             return;
         }
-        console.log("HELLO!");
+
+        switch (args.downloadType) {
+            case "oobabooga":
+                DownloadConversation_Oobabooga(chatData, args);
+                break;
+            case "example_chat":
+                DownloadConversation_ChatExample(chatData, args);
+                break;
+            default:
+                break;
+        }
+        console.log(chatData);
+    }
+
+    function DownloadConversation_Oobabooga(chatData, args) {
+        const ChatObject = {
+            data: [],
+            data_visible: [],
+        };
+        chatData.shift();
+        let currentPair = [];
+        chatData.filter(msg => msg.is_alternative === false)
+            .forEach((msg, index) => {
+                if (index % 2 == 0) {
+                    currentPair = [];
+                    currentPair.push(msg.text);
+                }
+                else {
+                    currentPair.push(msg.text);
+                    ChatObject.data.push(currentPair);
+                    ChatObject.data_visible.push(currentPair);
+                }
+            });
+
+        const Data_FinalForm = JSON.stringify(ChatObject);
+        const blob = new Blob([Data_FinalForm], { type: 'text/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${args.extId.substring(0, 8)}_${args.downloadType}_Chat.json`;
+        link.click();
+    }
+
+    function DownloadConversation_ChatExample(chatData, args) {
+        const messageList = [];
+        chatData.filter(msg => msg.is_alternative === false)
+            .forEach(msg => {
+                const message = "{{" + msg.src__name + "}}: " + msg.text;
+                messageList.push(message);
+            });
+        const chatString = messageList.join("\n");
+
+        const blob = new Blob([chatString], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${args.extId.substring(0, 8)}_Example.txt`;
+        link.click();
     }
 
 
     // HISTORY
 
     function DownloadHistory(args) {
-        if (!window.location.href.includes("character.ai/histories")) {
-            alert("Failed. Works only in histories page.");
-            return;
-        }
         const charId = getCharId();
         const historyData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_history') != null
             ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_history'))
@@ -499,7 +561,6 @@
         const dtype = args.downloadType;
         switch (dtype) {
             case "cai_offline_read":
-                console.log(historyData);
                 DownloadHistory_OfflineReading(historyData, character_name);
                 break;
             case "cai_dump":
@@ -527,7 +588,6 @@
                 }
                 break;
             case "example_chat":
-                console.log(historyData);
                 DownloadHistory_ExampleChat(historyData, character_name);
                 break;
             default:
@@ -615,7 +675,6 @@
             info: charInfo,
             histories: historyData,
         };
-        console.log(CharacterDump);
 
         const Data_FinalForm = JSON.stringify(CharacterDump);
         const blob = new Blob([Data_FinalForm], { type: 'text/json' });
@@ -688,9 +747,6 @@
         switch (dtype) {
             case "cai_settings_view":
                 DownloadSettings_View(settingsData);
-                break;
-                /*case "cai_settings_json":
-                    DownloadSettings_JSON(settingsData);*/
                 break;
             default:
                 break;

@@ -6,7 +6,7 @@ browser.webNavigation.onHistoryStateUpdated.addListener(function (details) {
             args: {}
         });
 
-        if (details.url.includes("character.ai/histories")) {
+        if (details.url.includes("character.ai/histories") || details.url.includes("character.ai/chat")) {
             browser.tabs.sendMessage(details.tabId, {
                 name: "Create_Options_DOM",
                 args: {}

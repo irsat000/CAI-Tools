@@ -5,9 +5,9 @@ Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkh
 
 Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
 # Current Status
-CharacterAI stopped giving us the history as extra. History features were unusable but I fixed it. Sadly it will be slower because they have no API service and they never will. Stable version is 1.2.2. Since it will be really slow for bigger chat histories, it has a progress information.
+CharacterAI stopped giving us the history as extra. History features were unusable but I fixed it. Sadly it will be slower because they have no API service and they never will. Prior to v1.2.2 won't work. Since it will be really slow for bigger chat histories, it has a progress information.
 # How to
-For conversation data, navigate to a conversation. You can also choose the chat from histories. 
+For conversation data, navigate to a conversation. You can also choose the conversation from histories. 
 For histories and settings data, navigate to "View Chat Histories".
 
 Click on CAI Tools button on top right corner to open the menu and start fetching data. You will see all the features in there.

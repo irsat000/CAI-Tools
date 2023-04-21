@@ -546,7 +546,7 @@
         link.click();
     }
 	
-	function DownloadConversation_Tavern(chatData) {
+	function DownloadConversation_Tavern(chatData, args) {
 	  const messages = [];
 	  const userName = 'You';
 

@@ -1,5 +1,5 @@
 # CAI Tools
-This chrome extension is made for the purpose of getting the data of beta.character.ai characters in various formats. 
+This chrome/firefox extension is made for the purpose of getting the data of beta.character.ai characters in various formats. 
 ###### Links
 Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje?hl=en
 
@@ -14,8 +14,8 @@ Click on CAI Tools button on top right corner to open the menu and start fetchin
 # Feature List
 ###### Download as Oobabooga chat
 It downloads the conversation in Oobabooga chat format. You can continue the conversation in Oobabooga with it.
-###### Download as TavernAI chat
-It downloads the conversation in TavernAI chat format. You can continue the conversation in TavernAI with it.
+###### Download as Tavern chat
+It downloads the conversation in Tavern chat format. You can continue the conversation in Tavern with it.
 ###### Download to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.
 ###### Character Dump (json)

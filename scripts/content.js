@@ -296,8 +296,8 @@
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
                             <li data-cait_type='oobabooga'>Download as Oobabooga chat</li>
+							<li data-cait_type='tavern'>Download as Tavern chat</li>
                             <li data-cait_type='example_chat'>Download as example chat/definition</li>
-							<li data-cait_type='tavern'>Download as TavernAI chat</li>
                         </ul>
                     </div>
                 </div>
@@ -349,13 +349,13 @@
             DownloadConversation(args);
             close_caiToolsModal(ch_header);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'example_chat' };
+		ch_header.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'tavern' };
             DownloadConversation(args);
             close_caiToolsModal(ch_header);
         });
-		ch_header.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'tavern' };
+        ch_header.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'example_chat' };
             DownloadConversation(args);
             close_caiToolsModal(ch_header);
         });
@@ -488,11 +488,11 @@
             case "oobabooga":
                 DownloadConversation_Oobabooga(chatData, args);
                 break;
+            case "tavern":
+                DownloadConversation_Tavern(chatData, args);
+                break;
             case "example_chat":
                 DownloadConversation_ChatExample(chatData, args);
-                break;
-			case "tavern":
-                DownloadConversation_Tavern(chatData, args);
                 break;
             default:
                 break;
@@ -529,23 +529,6 @@
         link.click();
     }
 
-    function DownloadConversation_ChatExample(chatData, args) {
-        const messageList = [];
-        chatData.filter(msg => msg.is_alternative === false)
-            .forEach(msg => {
-                const message = "{{" + msg.src__name + "}}: " + msg.text;
-                messageList.push(message);
-            });
-        const chatString = messageList.join("\n");
-
-        const blob = new Blob([chatString], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${args.extId.substring(0, 8)}_Example.txt`;
-        link.click();
-    }
-
 	function DownloadConversation_Tavern(chatData, args) {
 	  const messages = [];
 	  const userName = 'You';
@@ -566,7 +549,6 @@
 	  });
 
 	  let secondSpeaker = null;
-	  const totalMessages = messages.length;
 	  const outputLines = [initialPart];
 
 	  messages.forEach((message, index) => {
@@ -601,6 +583,23 @@
 	  link.download = `${args.extId.substring(0, 8)}_${args.downloadType}_Chat.jsonl`;
 	  link.click();
 	}
+
+    function DownloadConversation_ChatExample(chatData, args) {
+        const messageList = [];
+        chatData.filter(msg => msg.is_alternative === false)
+            .forEach(msg => {
+                const message = "{{" + msg.src__name + "}}: " + msg.text;
+                messageList.push(message);
+            });
+        const chatString = messageList.join("\n");
+
+        const blob = new Blob([chatString], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${args.extId.substring(0, 8)}_Example.txt`;
+        link.click();
+    }
 
     // HISTORY
 

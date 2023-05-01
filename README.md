@@ -14,6 +14,8 @@ Click on CAI Tools button on top right corner to open the menu and start fetchin
 # Feature List
 ###### Download as Oobabooga chat
 It downloads the conversation in Oobabooga chat format. You can continue the conversation in Oobabooga with it.
+###### Download as TavernAI chat
+It downloads the conversation in TavernAI chat format. You can continue the conversation in TavernAI with it.
 ###### Download to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.
 ###### Character Dump (json)

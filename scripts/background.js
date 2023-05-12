@@ -6,7 +6,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
             args: {}
         });
 
-        if (details.url.includes("character.ai/histories") || details.url.includes("character.ai/comms")) {
+        if (details.url.includes("character.ai/histories") || details.url.includes("character.ai/chat")) {
             chrome.tabs.sendMessage(details.tabId, {
                 name: "Create_Options_DOM",
                 args: {}

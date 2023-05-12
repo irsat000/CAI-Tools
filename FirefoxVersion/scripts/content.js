@@ -261,7 +261,7 @@
                 }
             }, 1000);
         }
-        else if (window.location.href.includes("character.ai/comms")) {
+        else if (window.location.href.includes("character.ai/chat")) {
             let ch_header = document.querySelector('.chattop');
             let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
 

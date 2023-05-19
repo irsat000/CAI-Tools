@@ -637,15 +637,6 @@
                 break;
             case "cai_dump":
                 DownloadHistory_AsDump(historyData, charInfo, dtype, character_name);
-                //If not registered, askToCreateCharacter should be true
-                if (window.sessionStorage.getItem('askToCreateCharacter') !== "false") {
-                    let createCharacter = confirm("Would you like to create a character for other AIs?");
-                    if (createCharacter === true) {
-                        window.open("https://zoltanai.github.io/character-editor/", "_blank");
-                    } else {
-                        window.sessionStorage.setItem('askToCreateCharacter', 'false');
-                    }
-                }
                 break;
             case "cai_dump_anon":
                 DownloadHistory_AsDump(historyData, charInfo, dtype, character_name);

@@ -291,7 +291,11 @@
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
                     </div>
                     <div class="cait-body">
-                        <span class="cait_warning">*Website update - Found a way but slower now*</span>
+                        <span class="cait_warning"></span>
+                        <h6>Character</h6>
+                        <ul>
+                            <li data-cait_type='character_hybrid'>Download Character (json)</li>
+                        </ul>
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
@@ -344,12 +348,17 @@
         }, 1000);
 
 
+        ch_header.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_character_hybrid' };
+            DownloadCharacter(args);
+            close_caiToolsModal(ch_header);
+        });
         ch_header.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
             const args = { extId: currentConverExtId, downloadType: 'oobabooga' };
             DownloadConversation(args);
             close_caiToolsModal(ch_header);
         });
-		ch_header.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
+        ch_header.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
             const args = { extId: currentConverExtId, downloadType: 'tavern' };
             DownloadConversation(args);
             close_caiToolsModal(ch_header);
@@ -378,14 +387,14 @@
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
                     </div>
                     <div class="cait-body">
-                        <span class="cait_warning">*Website update - Found a way but slower now*</span>
-                        <h6>Character history</h6>
+                        <span class="cait_warning"></span>
+                        <h6>History</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
                             <li data-cait_type='cai_offline_read'>Download to read offline</li>
                             <li data-cait_type='example_chat'>Download as example chat (txt)</li>
-                            <li data-cait_type='cai_dump'>Character Dump (json)</li>
-                            <li data-cait_type='cai_dump_anon'>Character Dump (anonymous)</li>
+                            <li data-cait_type='cai_dump'>Raw Dump (json)</li>
+                            <li data-cait_type='cai_dump_anon'>Raw Dump (anonymous)</li>
                         </ul>
                         <h6>Misc</h6>
                         <ul>
@@ -529,60 +538,60 @@
         link.click();
     }
 
-	function DownloadConversation_Tavern(chatData, args) {
-	  const messages = [];
-	  const userName = 'You';
+    function DownloadConversation_Tavern(chatData, args) {
+        const messages = [];
+        const userName = 'You';
 
-	  chatData.filter(msg => msg.is_alternative === false)
-		.forEach(msg => {
-		  const name = msg.src__name;
-		  const message = msg.text;
-		  messages.push({ name, message });
-		});
+        chatData.filter(msg => msg.is_alternative === false)
+            .forEach(msg => {
+                const name = msg.src__name;
+                const message = msg.text;
+                messages.push({ name, message });
+            });
 
-	  const characterName = messages[0].name;
-	  const createDate = Date.now();
-	  const initialPart = JSON.stringify({
-		user_name: userName,
-		character_name: characterName,
-		create_date: createDate,
-	  });
+        const characterName = messages[0].name;
+        const createDate = Date.now();
+        const initialPart = JSON.stringify({
+            user_name: userName,
+            character_name: characterName,
+            create_date: createDate,
+        });
 
-	  let secondSpeaker = null;
-	  const outputLines = [initialPart];
+        let secondSpeaker = null;
+        const outputLines = [initialPart];
 
-	  messages.forEach((message, index) => {
-		if (index === 1 && !secondSpeaker) {
-		  secondSpeaker = message.name;
-		}
+        messages.forEach((message, index) => {
+            if (index === 1 && !secondSpeaker) {
+                secondSpeaker = message.name;
+            }
 
-		if (message.name === secondSpeaker) {
-		  message.name = userName;
-		}
+            if (message.name === secondSpeaker) {
+                message.name = userName;
+            }
 
-		const isUser = message.name === userName;
-		const sendDate = Date.now();
+            const isUser = message.name === userName;
+            const sendDate = Date.now();
 
-		const formattedMessage = JSON.stringify({
-		  name: message.name,
-		  is_user: isUser,
-		  is_name: true,
-		  send_date: sendDate,
-		  mes: message.message,
-		});
+            const formattedMessage = JSON.stringify({
+                name: message.name,
+                is_user: isUser,
+                is_name: true,
+                send_date: sendDate,
+                mes: message.message,
+            });
 
-		outputLines.push(formattedMessage);
-	  });
+            outputLines.push(formattedMessage);
+        });
 
-	  const outputString = outputLines.join('\n');
+        const outputString = outputLines.join('\n');
 
-	  const blob = new Blob([outputString], { type: 'application/json' });
-	  const url = URL.createObjectURL(blob);
-	  const link = document.createElement('a');
-	  link.href = url;
-	  link.download = `${args.extId.substring(0, 8)}_${args.downloadType}_Chat.jsonl`;
-	  link.click();
-	}
+        const blob = new Blob([outputString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${args.extId.substring(0, 8)}_${args.downloadType}_Chat.jsonl`;
+        link.click();
+    }
 
     function DownloadConversation_ChatExample(chatData, args) {
         const messageList = [];
@@ -783,6 +792,87 @@
 
 
 
+
+    // CHARACTER DOWNLOAD
+
+    function DownloadCharacter(args) {
+        const fetchUrl = "https://beta.character.ai/chat/character/";
+        const AccessToken = getAccessToken();
+        const charId = getCharId();
+        const payload = { external_id: charId }
+        if (AccessToken != null && charId != null) {
+            fetchCharacterInfo(fetchUrl, AccessToken, payload);
+        }
+        else {
+            alert("Couldn't find current user or character id.");
+        }
+    }
+
+    function fetchCharacterInfo(fetchUrl, AccessToken, payload){
+        fetch(fetchUrl, {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                "authorization": AccessToken
+            },
+            body: JSON.stringify(payload)
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                console.log(data);
+                //Permission check
+                if(data.character.length === 0){
+                    // No permission because it's someone else's character
+                    const newUrl = "https://beta.character.ai/chat/character/info/";
+                    // To guarantee running once
+                    if(fetchUrl != newUrl){
+                        fetchCharacterInfo(newUrl, AccessToken, payload);
+                    }
+                    return;
+                }
+
+                const nowTimestamp = new Date().getTime();
+
+                const hybridCharacter = {
+                    char_name: data.character.name,
+                    char_persona: data.character.description,
+                    char_greeting: data.character.greeting,
+                    world_scenario: "",
+                    example_dialogue: data.character.definition ?? "",
+                    
+                    name: data.character.name,
+                    description: data.character.description,
+                    first_mes: data.character.greeting,
+                    scenario: "",
+                    mes_example: data.character.definition ?? "",
+                    personality: data.character.title,
+                    
+                    metadata: {
+                        version: 1,
+                        created: nowTimestamp,
+                        modified: nowTimestamp,
+                        source: null,
+                        tool: {
+                            name: "CAI Tools",
+                            version: "1.4.0",
+                            url: "https://www.github.com/irsat000/CAI-Tools"
+                        }
+                    }
+                }
+
+                const Data_FinalForm = JSON.stringify(hybridCharacter);
+                const blob = new Blob([Data_FinalForm], { type: 'text/json' });
+                const downloadUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = data.character.name.replaceAll(' ', '_') + '.json';
+                link.click();
+            })
+            .catch(err => console.log(err));
+    }
+
+    // CHARACTER DOWNLOAD - END
 
 
 

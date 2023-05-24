@@ -14,6 +14,8 @@ Some of the features will be available after some time has passed.
 # Feature List
 ###### Download Character (json)
 It downloads the character file in formats supported by other AI platforms, such as Tavern and Oobabooga.
+###### Download Character Card (png)
+It downloads the character card. Only works on characters who have an avatar. You can further edit this card in https://zoltanai.github.io/character-editor/
 ###### Download as Oobabooga chat
 It downloads the conversation in Oobabooga chat format. You can continue the conversation in Oobabooga with it.
 ###### Download as Tavern chat
@@ -21,9 +23,9 @@ It downloads the conversation in Tavern chat format. You can continue the conver
 ###### Download to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.
 ###### Raw Dump (json)
-It downloads the entire chat history and includes your character settings. It's compatible with Character Creation app. https://zoltanai.github.io/character-editor/ You can dump it here and create a character .json file or card. You can theen use these files to create a new character in Pygmalion AI.
+It downloads the entire chat history and includes your character settings. You can use these two options to train models.
 ###### Raw Dump (anonymous)
-This is a better option if you want to hide your first name, username, display name etc. Feel free to dump this here https://dump.nopanda.io/ to train Pygmalion AI with your existing chats.
+This is a better option if you want to hide your first name, username, display name etc.
 ###### Download as example chat
 This turns your chats into example chat/definition format so you can re-use them, both in CAI and Pygmalion AI. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
 

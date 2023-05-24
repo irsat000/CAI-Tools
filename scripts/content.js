@@ -1,7 +1,19 @@
 
 
 (() => {
-    const firstScript = document.getElementsByTagName("script")[0];
+    const metadata = {
+        version: 1,
+        created: Date.now(),
+        modified: Date.now(),
+        source: null,
+        tool: {
+            name: "CAI Tools",
+            version: "1.4.0",
+            url: "https://www.github.com/irsat000/CAI-Tools"
+        }
+    };
+
+
     const xhook_lib__url = chrome.runtime.getURL("scripts/xhook.min.js");
     const xhookScript = document.createElement("script");
     xhookScript.crossOrigin = "anonymous";
@@ -10,7 +22,17 @@
         initialize_options_DOM();
     };
     xhookScript.src = xhook_lib__url;
+
+
+    const pngjs_lib__url = chrome.runtime.getURL("scripts/pngjs.js");
+    const pngjsScript = document.createElement("script");
+    pngjsScript.crossOrigin = "anonymous";
+    pngjsScript.id = "pngjs";
+    pngjsScript.src = pngjs_lib__url;
+
+    const firstScript = document.getElementsByTagName("script")[0];
     firstScript.parentNode.insertBefore(xhookScript, firstScript);
+    //firstScript.parentNode.insertBefore(pngjsScript, firstScript);
 
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
@@ -295,6 +317,7 @@
                         <h6>Character</h6>
                         <ul>
                             <li data-cait_type='character_hybrid'>Download Character (json)</li>
+                            <li data-cait_type='character_card'>Download Character Card (png)</li>
                         </ul>
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
@@ -350,6 +373,11 @@
 
         ch_header.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_hybrid' };
+            DownloadCharacter(args);
+            close_caiToolsModal(ch_header);
+        });
+        ch_header.querySelector('.cai_tools-cont [data-cait_type="character_card"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_character_card' };
             DownloadCharacter(args);
             close_caiToolsModal(ch_header);
         });
@@ -792,14 +820,14 @@
         const charId = getCharId();
         const payload = { external_id: charId }
         if (AccessToken != null && charId != null) {
-            fetchCharacterInfo(fetchUrl, AccessToken, payload);
+            fetchCharacterInfo(fetchUrl, AccessToken, payload, args.downloadType);
         }
         else {
             alert("Couldn't find current user or character id.");
         }
     }
 
-    function fetchCharacterInfo(fetchUrl, AccessToken, payload){
+    function fetchCharacterInfo(fetchUrl, AccessToken, payload, downloadType) {
         fetch(fetchUrl, {
             method: "POST",
             headers: {
@@ -813,52 +841,147 @@
             .then((data) => {
                 console.log(data);
                 //Permission check
-                if(data.character.length === 0){
+                if (data.character.length === 0) {
                     // No permission because it's someone else's character
                     const newUrl = "https://beta.character.ai/chat/character/info/";
                     // To guarantee running once
-                    if(fetchUrl != newUrl){
-                        fetchCharacterInfo(newUrl, AccessToken, payload);
+                    if (fetchUrl != newUrl) {
+                        fetchCharacterInfo(newUrl, AccessToken, payload, downloadType);
                     }
                     return;
                 }
 
-                const nowTimestamp = new Date().getTime();
+                if (downloadType === "cai_character_hybrid") {
+                    const hybridCharacter = {
+                        char_name: data.character.name,
+                        char_persona: data.character.description,
+                        char_greeting: data.character.greeting,
+                        world_scenario: "",
+                        example_dialogue: data.character.definition ?? "",
 
-                const hybridCharacter = {
-                    char_name: data.character.name,
-                    char_persona: data.character.description,
-                    char_greeting: data.character.greeting,
-                    world_scenario: "",
-                    example_dialogue: data.character.definition ?? "",
-                    
-                    name: data.character.name,
-                    description: data.character.description,
-                    first_mes: data.character.greeting,
-                    scenario: "",
-                    mes_example: data.character.definition ?? "",
-                    personality: data.character.title,
-                    
-                    metadata: {
-                        version: 1,
-                        created: nowTimestamp,
-                        modified: nowTimestamp,
-                        source: null,
-                        tool: {
-                            name: "CAI Tools",
-                            version: "1.4.0",
-                            url: "https://www.github.com/irsat000/CAI-Tools"
-                        }
+                        name: data.character.name,
+                        description: data.character.description,
+                        first_mes: data.character.greeting,
+                        scenario: "",
+                        mes_example: data.character.definition ?? "",
+                        personality: data.character.title,
+
+                        metadata: metadata
                     }
-                }
 
-                const Data_FinalForm = JSON.stringify(hybridCharacter);
-                const blob = new Blob([Data_FinalForm], { type: 'text/json' });
-                const downloadUrl = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = data.character.name.replaceAll(' ', '_') + '.json';
-                link.click();
+                    const Data_FinalForm = JSON.stringify(hybridCharacter);
+                    const blob = new Blob([Data_FinalForm], { type: 'text/json' });
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = data.character.name.replaceAll(' ', '_') + '.json';
+                    link.click();
+                }
+                else if (downloadType === "cai_character_card") {
+                    if (data.character.avatar_file_name == null ||
+                        data.character.avatar_file_name == "" ||
+                        data.character.avatar_file_name.length == 0
+                    ) {
+                        alert("Only works on characters who have an avatar.")
+                        return;
+                    }
+                    
+                    const cardCharacter = {
+                        name: data.character.name,
+                        description: data.character.description,
+                        first_mes: data.character.greeting,
+                        scenario: "",
+                        mes_example: data.character.definition ?? "",
+                        personality: data.character.title,
+
+                        metadata: metadata
+                    }
+
+                    const avatarLink = `https://characterai.io/i/400/static/avatars/${data.character.avatar_file_name}`;
+
+                    const charInfo = JSON.stringify(cardCharacter, undefined, '\t');
+
+                    fetch(avatarLink)
+                        .then(res => res.blob())
+                        .then(avifBlob => {
+                            const img = new Image();
+                            const objectURL = URL.createObjectURL(avifBlob);
+                            img.src = objectURL;
+
+                            img.onload = function () {
+                                // Create a canvas element
+                                const canvas = document.createElement("canvas");
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+
+                                // Draw the AVIF image onto the canvas
+                                const ctx = canvas.getContext("2d");
+                                ctx.drawImage(img, 0, 0);
+
+                                // Convert canvas content to PNG Blob
+                                canvas.toBlob(canvasBlob => {
+                                    const fileReader = new FileReader();
+                                    fileReader.onload = function (event) {
+                                        const chunks = extractChunks(new Uint8Array(event.target.result)).filter(x => x.name !== 'tEXt');
+
+                                        // Create new tEXt chunk
+                                        const keyword = [99, 104, 97, 114, 97]; // "chara" in ASCII
+                                        const encodedValue = btoa(new TextEncoder().encode(charInfo).reduce((a, b) => a + String.fromCharCode(b), ''));
+                                        const valueBytes = [];
+                                        for (let i = 0; i < encodedValue.length; i++) {
+                                            valueBytes.push(encodedValue.charCodeAt(i));
+                                        }
+                                        const tEXtChunk = {
+                                            name: 'tEXt',
+                                            data: new Uint8Array([...keyword, 0, ...valueBytes])
+                                        };
+
+                                        // Find the index of 'IEND'
+                                        const iendIndex = chunks.findIndex(obj => obj.name === 'IEND');
+
+                                        // Insert the new tEXt before 'IEND'
+                                        chunks.splice(iendIndex, 0, tEXtChunk);
+
+                                        // Combine
+                                        const combinedData = [];
+                                        // Signature
+                                        combinedData.push(...[137, 80, 78, 71, 13, 10, 26, 10]);
+                                        chunks.forEach(chunk => {
+                                            const length = chunk.data.length;
+                                            const lengthBytes = new Uint8Array(4);
+                                            lengthBytes[0] = (length >> 24) & 0xFF;
+                                            lengthBytes[1] = (length >> 16) & 0xFF;
+                                            lengthBytes[2] = (length >> 8) & 0xFF;
+                                            lengthBytes[3] = length & 0xFF;
+
+                                            const type = chunk.name.split('').map(char => char.charCodeAt(0));
+
+                                            const crc = CRC32.buf(chunk.data, CRC32.str(chunk.name));
+
+                                            const crcBytes = new Uint8Array(4);
+                                            crcBytes[0] = (crc >> 24) & 0xFF;
+                                            crcBytes[1] = (crc >> 16) & 0xFF;
+                                            crcBytes[2] = (crc >> 8) & 0xFF;
+                                            crcBytes[3] = crc & 0xFF;
+
+                                            combinedData.push(...lengthBytes, ...type, ...chunk.data, ...crcBytes);
+                                        });
+
+                                        // Download
+                                        const newDataBlob = new Blob([new Uint8Array(combinedData).buffer], { type: 'image/png' });
+                                        const link = document.createElement('a');
+                                        link.href = URL.createObjectURL(newDataBlob);
+                                        link.download = data.character.name ?? 'character_card.png';
+                                        link.click();
+                                    };
+                                    fileReader.readAsArrayBuffer(canvasBlob);
+                                }, "image/png");
+                            };
+                        })
+                        .catch(err => {
+                            console.error('Error while fetching avatar.');
+                        });
+                }
             })
             .catch(err => console.log(err));
     }
@@ -956,6 +1079,102 @@
         const template = document.createElement('template');
         template.innerHTML = html;
         return template.content;
+    }
+
+    // Source: https://github.com/hughsk/png-chunks-extract
+    var uint8 = new Uint8Array(4)
+    var int32 = new Int32Array(uint8.buffer)
+    var uint32 = new Uint32Array(uint8.buffer)
+    function extractChunks(data) {
+        if (data[0] !== 0x89) throw new Error('Invalid .png file header')
+        if (data[1] !== 0x50) throw new Error('Invalid .png file header')
+        if (data[2] !== 0x4E) throw new Error('Invalid .png file header')
+        if (data[3] !== 0x47) throw new Error('Invalid .png file header')
+        if (data[4] !== 0x0D) throw new Error('Invalid .png file header: possibly caused by DOS-Unix line ending conversion?')
+        if (data[5] !== 0x0A) throw new Error('Invalid .png file header: possibly caused by DOS-Unix line ending conversion?')
+        if (data[6] !== 0x1A) throw new Error('Invalid .png file header')
+        if (data[7] !== 0x0A) throw new Error('Invalid .png file header: possibly caused by DOS-Unix line ending conversion?')
+
+        var ended = false
+        var chunks = []
+        var idx = 8
+
+        while (idx < data.length) {
+            // Read the length of the current chunk,
+            // which is stored as a Uint32.
+            uint8[3] = data[idx++]
+            uint8[2] = data[idx++]
+            uint8[1] = data[idx++]
+            uint8[0] = data[idx++]
+
+            // Chunk includes name/type for CRC check (see below).
+            var length = uint32[0] + 4
+            var chunk = new Uint8Array(length)
+            chunk[0] = data[idx++]
+            chunk[1] = data[idx++]
+            chunk[2] = data[idx++]
+            chunk[3] = data[idx++]
+
+            // Get the name in ASCII for identification.
+            var name = (
+                String.fromCharCode(chunk[0]) +
+                String.fromCharCode(chunk[1]) +
+                String.fromCharCode(chunk[2]) +
+                String.fromCharCode(chunk[3])
+            )
+
+            // The IHDR header MUST come first.
+            if (!chunks.length && name !== 'IHDR') {
+                throw new Error('IHDR header missing')
+            }
+
+            // The IEND header marks the end of the file,
+            // so on discovering it break out of the loop.
+            if (name === 'IEND') {
+                ended = true
+                chunks.push({
+                    name: name,
+                    data: new Uint8Array(0)
+                })
+
+                break
+            }
+
+            // Read the contents of the chunk out of the main buffer.
+            for (var i = 4; i < length; i++) {
+                chunk[i] = data[idx++]
+            }
+
+            // Read out the CRC value for comparison.
+            // It's stored as an Int32.
+            uint8[3] = data[idx++]
+            uint8[2] = data[idx++]
+            uint8[1] = data[idx++]
+            uint8[0] = data[idx++]
+
+            var crcActual = int32[0]
+            var crcExpect = CRC32.buf(chunk)
+            if (crcExpect !== crcActual) {
+                throw new Error(
+                    'CRC values for ' + name + ' header do not match, PNG file is likely corrupted'
+                )
+            }
+
+            // The chunk data is now copied to remove the 4 preceding
+            // bytes used for the chunk name/type.
+            var chunkData = new Uint8Array(chunk.buffer.slice(4))
+
+            chunks.push({
+                name: name,
+                data: chunkData
+            })
+        }
+
+        if (!ended) {
+            throw new Error('.png file ended prematurely: no IEND header was found')
+        }
+
+        return chunks
     }
 
 })();

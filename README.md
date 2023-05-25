@@ -16,6 +16,9 @@ Some of the features will be available after some time has passed.
 It downloads the character file in formats supported by other AI platforms, such as Tavern and Oobabooga.
 ###### Download Character Card (png)
 It downloads the character card. Only works on characters who have an avatar. You can further edit this card in https://zoltanai.github.io/character-editor/
+###### Show Settings
+Opens a box to show you all the settings you are allowed to see. Currently, only definitions might be hidden from you at most.
+
 ###### Download as Oobabooga chat
 It downloads the conversation in Oobabooga chat format. You can continue the conversation in Oobabooga with it.
 ###### Download as Tavern chat
@@ -30,8 +33,6 @@ This is a better option if you want to hide your first name, username, display n
 This turns your chats into example chat/definition format so you can re-use them, both in CAI and Pygmalion AI. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
 
 If you are in View Chat Histories page, it will download the entire history in this format. If you are in a conversation page, it will download only that chat.
-###### Download Settings
-It downloads an .html file. Even if a public character's settings are hidden, you can still download it and click on it to view it in browser. You will see the settings in key-value pairs. Definitions(chat examples) won't be showed unfortunately.
 ###### Passive
 Shows up to 999 chats in "View Chat Histories". You can download it all. The limit they put was originally 50.
 

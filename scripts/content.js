@@ -1,6 +1,8 @@
 
 
 (() => {
+    const extensionAPI = chrome;
+
     const metadata = {
         version: 1,
         created: Date.now(),
@@ -8,13 +10,13 @@
         source: null,
         tool: {
             name: "CAI Tools",
-            version: "1.4.0",
+            version: "1.5.1",
             url: "https://www.github.com/irsat000/CAI-Tools"
         }
     };
 
 
-    const xhook_lib__url = chrome.runtime.getURL("scripts/xhook.min.js");
+    const xhook_lib__url = extensionAPI.runtime.getURL("scripts/xhook.min.js");
     const xhookScript = document.createElement("script");
     xhookScript.crossOrigin = "anonymous";
     xhookScript.id = "xhook";
@@ -22,28 +24,13 @@
         initialize_options_DOM();
     };
     xhookScript.src = xhook_lib__url;
-
-
-    const pngjs_lib__url = chrome.runtime.getURL("scripts/pngjs.js");
-    const pngjsScript = document.createElement("script");
-    pngjsScript.crossOrigin = "anonymous";
-    pngjsScript.id = "pngjs";
-    pngjsScript.src = pngjs_lib__url;
-
     const firstScript = document.getElementsByTagName("script")[0];
     firstScript.parentNode.insertBefore(xhookScript, firstScript);
-    //firstScript.parentNode.insertBefore(pngjsScript, firstScript);
 
 
-    chrome.runtime.onMessage.addListener((obj, sender, response) => {
+    extensionAPI.runtime.onMessage.addListener((obj, sender, response) => {
         const { name, args } = obj;
-        if (name === "DownloadCAIHistory") {
-            DownloadHistory(args);
-        }
-        else if (name === "DownloadCharSettings") {
-            DownloadSettings(args);
-        }
-        else if (name === "Create_Options_DOM") {
+        if (name === "Create_Options_DOM") {
             initialize_options_DOM();
         }
         else if (name === "Reset_Modal") {
@@ -318,6 +305,7 @@
                         <ul>
                             <li data-cait_type='character_hybrid'>Download Character (json)</li>
                             <li data-cait_type='character_card'>Download Character Card (png)</li>
+                            <li data-cait_type='character_settings'>Show settings</li>
                         </ul>
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
@@ -326,6 +314,16 @@
 							<li data-cait_type='tavern'>Download as Tavern chat</li>
                             <li data-cait_type='example_chat'>Download as example chat/definition</li>
                         </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="cait_settings-cont">
+                <div class="cait_settings">
+                    <div class="caits_header">
+                        <h4>Settings</h4><span class="caits-close">x</span>
+                    </div>
+                    <div class="caits-body">
+                        <pre id="cait_jsonViewer"></pre>
                     </div>
                 </div>
             </div>
@@ -351,6 +349,12 @@
             const target = event.target;
             if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
                 close_caiToolsModal(ch_header);
+            }
+        });
+        ch_header.querySelector('.cait_settings-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cait_settings-cont') || target.classList.contains('caits-close')) {
+                close_caitSettingsModal(ch_header);
             }
         });
 
@@ -381,6 +385,12 @@
             DownloadCharacter(args);
             close_caiToolsModal(ch_header);
         });
+        ch_header.querySelector('.cai_tools-cont [data-cait_type="character_settings"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_character_settings' };
+            DownloadCharacter(args);
+            close_caiToolsModal(ch_header);
+        });
+
         ch_header.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
             const args = { extId: currentConverExtId, downloadType: 'oobabooga' };
             DownloadConversation(args);
@@ -424,14 +434,16 @@
                             <li data-cait_type='cai_dump'>Raw Dump (json)</li>
                             <li data-cait_type='cai_dump_anon'>Raw Dump (anonymous)</li>
                         </ul>
-                        <h6>Misc</h6>
-                        <ul>
-                            <li data-cait_type='cai_settings_view'>Download Settings (viewer)</li>
-                        </ul>
                     </div>
                 </div>
             </div>
         `;
+        /*
+            <h6>Misc</h6>
+            <ul>
+                <li data-cait_type=''>)</li>
+            </ul>
+        */
         ch_header.appendChild(parseHTML(cai_tools_string));
 
         const historyMeta = document.querySelector(`meta[cai_charid="${charId}"][cai_history]`);
@@ -493,17 +505,14 @@
             DownloadHistory(args);
             close_caiToolsModal(ch_header);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_settings_view"]').addEventListener('click', () => {
-            const args = { downloadType: 'cai_settings_view' };
-            DownloadSettings(args);
-            close_caiToolsModal(ch_header);
-        });
     }
 
     function close_caiToolsModal(container) {
         container.querySelector('.cai_tools-cont').classList.remove('active');
     }
-
+    function close_caitSettingsModal(container) {
+        container.querySelector('.cait_settings-cont').classList.remove('active');
+    }
     // CAI Tools - DOM - END
 
 
@@ -613,7 +622,7 @@
 
         const outputString = outputLines.join('\n');
 
-        const blob = new Blob([outputString], { type: 'application/json' });
+        const blob = new Blob([outputString], { type: 'application/jsonl' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -623,9 +632,11 @@
 
     function DownloadConversation_ChatExample(chatData, args) {
         const messageList = [];
+        messageList.push("<START>");
         chatData.filter(msg => msg.is_alternative === false)
             .forEach(msg => {
-                const message = "{{" + msg.src__name + "}}: " + msg.text;
+                const user = msg.src__is_human ? "user" : "char";
+                const message = `{{${user}}}: ${msg.text}`;
                 messageList.push(message);
             });
         const chatString = messageList.join("\n");
@@ -706,7 +717,7 @@
             i++;
         });
 
-        var fileUrl = chrome.runtime.getURL('ReadOffline.html');
+        var fileUrl = extensionAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
         xhr.open('GET', fileUrl, true);
         xhr.onreadystatechange = function () {
@@ -789,9 +800,11 @@
         const histories = historyData.histories.reverse();
         const messageList = [];
         histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
+            messageList.push("<START>");
             obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
                 .forEach(msg => {
-                    const message = "{{" + msg.src.name + "}}: " + msg.text;
+                    const user = msg.src.is_human ? "user" : "char";
+                    const message = `{{${user}}}: ${msg.text}`;
                     messageList.push(message);
                 });
         });
@@ -885,7 +898,7 @@
                         alert("Only works on characters who have an avatar.")
                         return;
                     }
-                    
+
                     const cardCharacter = {
                         name: data.character.name,
                         description: data.character.description,
@@ -982,6 +995,26 @@
                             console.error('Error while fetching avatar.');
                         });
                 }
+                else if (downloadType === "cai_character_settings") {
+                    const viewerPre = document.getElementById("cait_jsonViewer");
+                    if (viewerPre) {
+                        viewerPre.innerHTML = "";
+
+                        for (let prop in data.character) {
+                            if (data.character.hasOwnProperty(prop)) {
+                                const line = `<span class="cait_jv_prop">${prop}:</span> ${data.character[prop]}\r\n`;
+                                viewerPre.innerHTML += line.replace(/\r/g, '&#13;').replace(/\n/g, '&#10;');
+                                viewerPre.innerHTML += "<br />";
+                            }
+                        }
+
+                        viewerPre.closest('.cait_settings-cont').classList.add('active');
+                        // viewerPre.innerHTML = JSON.stringify(data.character, null, 2); // Alternative
+                    }
+                    else {
+                        alert("Error while trying to show settings.")
+                    }
+                }
             })
             .catch(err => console.log(err));
     }
@@ -990,9 +1023,9 @@
 
 
 
-    // SETTINGS
+    // SETTINGS   ( DEPRECATED )
 
-    function DownloadSettings(args) {
+    /*function DownloadSettings(args) {
         if (!window.location.href.includes("character.ai/histories")) {
             alert("Failed. Works only in histories page.");
             return;
@@ -1028,7 +1061,7 @@
             settingsData.character.definition = encodeURIComponent(settingsData.character.definition);
         }
 
-        var fileUrl = chrome.runtime.getURL('ReadCharSettings.html');
+        var fileUrl = extensionAPI.runtime.getURL('ReadCharSettings.html');
         var xhr = new XMLHttpRequest();
         xhr.open('GET', fileUrl, true);
         xhr.onreadystatechange = function () {
@@ -1050,6 +1083,8 @@
         };
         xhr.send();
     }
+    SETTINGS END  - DEPRECATED -
+    */
 
 
     function removeSpecialChars(str) {

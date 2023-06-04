@@ -583,7 +583,7 @@
     }
 
     function DownloadConversation_Tavern(chatData, args) {
-        if(chatData.length <= 1){
+        if (chatData.length <= 1) {
             alert("The conversation is empty.")
             return;
         }
@@ -790,30 +790,41 @@
 
 
     function DownloadHistory_TavernHistory(historyData, character_name) {
+        const histories = historyData.histories.reverse();
         const char_id = getCharId();
         const zip = new JSZip();
 
         let count = 0;
-        historyData.histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach((chat, index) => {
+        const filePromises = histories.filter(v => v.msgs != null && v.msgs.length > 1).map(async (chat, index) => {
             count = index + 1;
-            const ext_id = chat.external_id;
-            console.log(chat.msgs);
             const blob = CreateTavernChatBlob(chat.msgs);
-            zip.file(`${ext_id}.jsonl`, blob);
+            const arraybuffer = await readAsBinaryString(blob);
+            zip.file(`chat_${index + 1}.jsonl`, arraybuffer, {binary: true});
         });
 
-        if(count === 0){
-            alert("History have no messages.");
-            return;
-        }
+        Promise.all(filePromises).then(() => {
+            if (count === 0) {
+                alert("History have no messages.");
+                return;
+            }
+            zip.generateAsync({ type: 'blob' }).then(function (content) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = character_name != null
+                    ? `${character_name}_TavernHistory.zip`
+                    : `${char_id.substring(0, 8)}.zip`;
+                link.click();
+            });
+        });
+    }
 
-        zip.generateAsync({ type: 'blob' }).then(function (content) {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = character_name != null
-                ? `${character_name}_TavernHistory.zip`
-                : `${char_id.substring(0, 8)}.zip`;
-            link.click();
+    function readAsBinaryString(blob) {
+        return new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                resolve(event.target.result);
+            };
+            reader.readAsBinaryString(blob);
         });
     }
     //HISTORY - END

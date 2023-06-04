@@ -10,7 +10,7 @@
         source: null,
         tool: {
             name: "CAI Tools",
-            version: "1.5.1",
+            version: "1.5.2",
             url: "https://www.github.com/irsat000/CAI-Tools"
         }
     };
@@ -433,6 +433,7 @@
                             <li data-cait_type='example_chat'>Download as example chat (txt)</li>
                             <li data-cait_type='cai_dump'>Raw Dump (json)</li>
                             <li data-cait_type='cai_dump_anon'>Raw Dump (anonymous)</li>
+                            <li data-cait_type='cai_tavern_history'>Tavern Chats (zip/jsonl)</li>
                         </ul>
                     </div>
                 </div>
@@ -505,6 +506,12 @@
             DownloadHistory(args);
             close_caiToolsModal(ch_header);
         });
+        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_tavern_history"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_tavern_history' };
+            DownloadHistory(args);
+            close_caiToolsModal(ch_header);
+        });
+
     }
 
     function close_caiToolsModal(container) {
@@ -576,53 +583,11 @@
     }
 
     function DownloadConversation_Tavern(chatData, args) {
-        const messages = [];
-        const userName = 'You';
-
-        chatData.filter(msg => msg.is_alternative === false)
-            .forEach(msg => {
-                const name = msg.src__name;
-                const message = msg.text;
-                messages.push({ name, message });
-            });
-
-        const characterName = messages[0].name;
-        const createDate = Date.now();
-        const initialPart = JSON.stringify({
-            user_name: userName,
-            character_name: characterName,
-            create_date: createDate,
-        });
-
-        let secondSpeaker = null;
-        const outputLines = [initialPart];
-
-        messages.forEach((message, index) => {
-            if (index === 1 && !secondSpeaker) {
-                secondSpeaker = message.name;
-            }
-
-            if (message.name === secondSpeaker) {
-                message.name = userName;
-            }
-
-            const isUser = message.name === userName;
-            const sendDate = Date.now();
-
-            const formattedMessage = JSON.stringify({
-                name: message.name,
-                is_user: isUser,
-                is_name: true,
-                send_date: sendDate,
-                mes: message.message,
-            });
-
-            outputLines.push(formattedMessage);
-        });
-
-        const outputString = outputLines.join('\n');
-
-        const blob = new Blob([outputString], { type: 'application/jsonl' });
+        if(chatData.length <= 1){
+            alert("The conversation is empty.")
+            return;
+        }
+        const blob = CreateTavernChatBlob(chatData);
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -691,6 +656,9 @@
                 break;
             case "example_chat":
                 DownloadHistory_ExampleChat(historyData, character_name);
+                break;
+            case "cai_tavern_history":
+                DownloadHistory_TavernHistory(historyData, character_name);
                 break;
             default:
                 break;
@@ -820,6 +788,34 @@
         link.click();
     }
 
+
+    function DownloadHistory_TavernHistory(historyData, character_name) {
+        const char_id = getCharId();
+        const zip = new JSZip();
+
+        let count = 0;
+        historyData.histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach((chat, index) => {
+            count = index + 1;
+            const ext_id = chat.external_id;
+            console.log(chat.msgs);
+            const blob = CreateTavernChatBlob(chat.msgs);
+            zip.file(`${ext_id}.jsonl`, blob);
+        });
+
+        if(count === 0){
+            alert("History have no messages.");
+            return;
+        }
+
+        zip.generateAsync({ type: 'blob' }).then(function (content) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = character_name != null
+                ? `${character_name}_TavernHistory.zip`
+                : `${char_id.substring(0, 8)}.zip`;
+            link.click();
+        });
+    }
     //HISTORY - END
 
 
@@ -1023,68 +1019,39 @@
 
 
 
-    // SETTINGS   ( DEPRECATED )
 
-    /*function DownloadSettings(args) {
-        if (!window.location.href.includes("character.ai/histories")) {
-            alert("Failed. Works only in histories page.");
-            return;
-        }
 
-        const charId = getCharId();
-        const settingsData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_info') != null
-            ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_info'))
-            : null;
+    function CreateTavernChatBlob(chatData) {
+        const userName = 'You';
+        const characterName = chatData[0].src__name ?? chatData[0].src.name;
+        const createDate = Date.now();
+        const initialPart = JSON.stringify({
+            user_name: userName,
+            character_name: characterName,
+            create_date: createDate,
+        });
+        const outputLines = [initialPart];
 
-        if (settingsData == null || settingsData.character == null) {
-            alert("Data is not ready. Try again later.")
-            return;
-        }
+        chatData.filter(msg => msg.is_alternative === false).forEach((message) => {
+            let currentUser = message.src__name != characterName && message.src.name != characterName
+                ? "You"
+                : characterName;
+            const formattedMessage = JSON.stringify({
+                name: currentUser,
+                is_user: currentUser === "You",
+                is_name: true,
+                send_date: Date.now(),
+                mes: message.text,
+            });
 
-        console.log(settingsData);
+            outputLines.push(formattedMessage);
+        });
 
-        const dtype = args.downloadType;
-        switch (dtype) {
-            case "cai_settings_view":
-                DownloadSettings_View(settingsData);
-                break;
-            default:
-                break;
-        }
+        const outputString = outputLines.join('\n');
+
+        return new Blob([outputString], { type: 'application/jsonl' });
     }
 
-    function DownloadSettings_View(settingsData) {
-        //prevents json errors (/r /n etc)
-        settingsData.character.description = encodeURIComponent(settingsData.character.description);
-        settingsData.character.greeting = encodeURIComponent(settingsData.character.greeting);
-        if (settingsData.character.definition != null) {
-            settingsData.character.definition = encodeURIComponent(settingsData.character.definition);
-        }
-
-        var fileUrl = extensionAPI.runtime.getURL('ReadCharSettings.html');
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', fileUrl, true);
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                var fileContents = xhr.responseText;
-                fileContents = fileContents.replace(
-                    '<<<CHARACTER_SETTINGS>>>',
-                    JSON.stringify(settingsData)
-                );
-
-                var blob = new Blob([fileContents], { type: 'text/html' });
-                var url = URL.createObjectURL(blob);
-
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = settingsData.character.name.replaceAll(' ', '_') + '_CaiSettings.html';
-                link.click();
-            }
-        };
-        xhr.send();
-    }
-    SETTINGS END  - DEPRECATED -
-    */
 
 
     function removeSpecialChars(str) {

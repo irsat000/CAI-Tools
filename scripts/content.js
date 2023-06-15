@@ -2,7 +2,7 @@
 
 (() => {
     const extAPI = chrome;
-    const extVersion = "1.5.2";
+    const extVersion = "1.5.3";
 
     const metadata = {
         version: 1,
@@ -236,7 +236,7 @@
             handleProgressInfoMeta(`(Ready!)`);
         } else {
             createFetchStartedMeta("false");
-            alert("Failed to intercept CAI. Try reloading.");
+            alert("Failed to get history.");
         }
     };
 

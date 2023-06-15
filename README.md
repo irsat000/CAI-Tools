@@ -49,4 +49,4 @@ Shows up to 999 chats in "View Chat Histories". You can download it all. The lim
 You can download this file individually. This can convert your existing .json character/history dumps into readable format, similar to "Download to read offline". Open this file, upload your dump in the input at middle-top of the page, that's all.
 
 # Screenshot
-![SS](https://github.com/irsat000/CAI-Tools/assets/38238671/2194b801-30a5-4a66-8415-9272d71eee1b)
+![Preview](https://github.com/irsat000/CAI-Tools/assets/38238671/ff724f87-abb1-4d47-86a8-409d13cdea67)

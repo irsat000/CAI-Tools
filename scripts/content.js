@@ -1,7 +1,8 @@
 
 
 (() => {
-    const extensionAPI = chrome;
+    const extAPI = chrome;
+    const extVersion = "1.5.2";
 
     const metadata = {
         version: 1,
@@ -10,13 +11,13 @@
         source: null,
         tool: {
             name: "CAI Tools",
-            version: "1.5.2",
+            version: extVersion,
             url: "https://www.github.com/irsat000/CAI-Tools"
         }
     };
 
 
-    const xhook_lib__url = extensionAPI.runtime.getURL("scripts/xhook.min.js");
+    const xhook_lib__url = extAPI.runtime.getURL("scripts/xhook.min.js");
     const xhookScript = document.createElement("script");
     xhookScript.crossOrigin = "anonymous";
     xhookScript.id = "xhook";
@@ -28,7 +29,7 @@
     firstScript.parentNode.insertBefore(xhookScript, firstScript);
 
 
-    extensionAPI.runtime.onMessage.addListener((obj, sender, response) => {
+    extAPI.runtime.onMessage.addListener((obj, sender, response) => {
         const { name, args } = obj;
         if (name === "Create_Options_DOM") {
             initialize_options_DOM();
@@ -685,7 +686,7 @@
             i++;
         });
 
-        var fileUrl = extensionAPI.runtime.getURL('ReadOffline.html');
+        var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
         xhr.open('GET', fileUrl, true);
         xhr.onreadystatechange = function () {

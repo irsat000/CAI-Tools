@@ -1,8 +1,9 @@
 
 
 (() => {
-    const extAPI = browser;
-    const extVersion = "1.5.3";
+    // These values must be updated when required
+    const extAPI = browser; // chrome / browser
+    const extVersion = "1.5.4";
 
     const metadata = {
         version: 1,
@@ -89,7 +90,7 @@
 
     const fetchMessages = async ({ fetchDataType, nextPage, AccessToken, chatExternalId, chat, chatsLength, converList }) => {
         await new Promise(resolve => setTimeout(resolve, 200));
-        let url = `https://beta.character.ai/chat/history/msgs/user/?history_external_id=${chatExternalId}`;
+        let url = `https://${getMembership()}.character.ai/chat/history/msgs/user/?history_external_id=${chatExternalId}`;
         if (nextPage > 0) {
             url += `&page_num=${nextPage}`;
         }
@@ -185,7 +186,7 @@
                 }
             })
             .catch(async (err) => {
-                console.log("Error. Will try again after 10 seconds.");
+                console.log("Likely rate limitting error. Will continue after 10 seconds.");
                 await new Promise(resolve => setTimeout(resolve, 10000));
                 return await fetchMessages({
                     fetchDataType: fetchDataType,
@@ -645,13 +646,13 @@
                 break;
             case "cai_dump_anon":
                 DownloadHistory_AsDump(historyData, charInfo, dtype, character_name);
-                //If not registered, askToFeedPygmalion should be true
-                if (window.sessionStorage.getItem('askToFeedPygmalion') !== "false") {
-                    let trainPygmalion = confirm("Would you like to train Pygmalion AI with this dump?");
-                    if (trainPygmalion === true) {
+                //If not registered, askToFeedModel should be true
+                if (window.sessionStorage.getItem('askToFeedModel') !== "false") {
+                    let trainModel = confirm("Would you like to train models with this dump?");
+                    if (trainModel === true) {
                         window.open("https://dump.nopanda.io/", "_blank");
                     } else {
-                        window.sessionStorage.setItem('askToFeedPygmalion', 'false');
+                        window.sessionStorage.setItem('askToFeedModel', 'false');
                     }
                 }
                 break;
@@ -836,7 +837,7 @@
     // CHARACTER DOWNLOAD
 
     function DownloadCharacter(args) {
-        const fetchUrl = "https://beta.character.ai/chat/character/";
+        const fetchUrl = "https://" + getMembership() + ".character.ai/chat/character/";
         const AccessToken = getAccessToken();
         const charId = getCharId();
         const payload = { external_id: charId }
@@ -844,7 +845,7 @@
             fetchCharacterInfo(fetchUrl, AccessToken, payload, args.downloadType);
         }
         else {
-            alert("Couldn't find current user or character id.");
+            alert("Couldn't find logged in user or character id.");
         }
     }
 
@@ -864,7 +865,7 @@
                 //Permission check
                 if (data.character.length === 0) {
                     // No permission because it's someone else's character
-                    const newUrl = "https://beta.character.ai/chat/character/info/";
+                    const newUrl = "https://" + getMembership() + ".character.ai/chat/character/info/";
                     // To guarantee running once
                     if (fetchUrl != newUrl) {
                         fetchCharacterInfo(newUrl, AccessToken, payload, downloadType);
@@ -1083,6 +1084,15 @@
         const searchParams = new URLSearchParams(url.search);
         const charId = searchParams.get('char');
         return charId;
+    }
+
+    // Might be unnecessary when I have getMembership()
+    function checkPlus(){
+        return window.location.hostname.indexOf("plus") > -1 ? true : false;
+    }
+
+    function getMembership(){
+        return window.location.hostname.indexOf("plus") > -1 ? "plus" : "beta";
     }
 
     function getAccessToken() {

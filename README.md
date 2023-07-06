@@ -7,7 +7,7 @@ Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkh
 Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
 
 # How to
-For conversation and character data, navigate to a conversation. You can also choose the conversation from histories. 
+For conversation and character data, navigate to a conversation pages. You can choose any conversation from histories page.
 For history data, navigate to "View Chat Histories".
 
 Click on CAI Tools button on top right corner to open the menu. You will see all the features in there.
@@ -27,7 +27,7 @@ It downloads the conversation in Oobabooga chat format. You can continue the con
 ###### Download as Tavern chat
 It downloads the conversation in Tavern chat format. You can continue the conversation in Tavern with it.
 ###### Download as example chat
-This turns the conversation into example chat/definition format so you can use it in CAI and Pygmalion AI. It downloads a .txt file, which is a text document. All you need to do is copy pasting the content.
+This turns the conversation into example chat/definition format so you can use it in CAI and other AI chat platforms. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
 
 ### History Page
 ###### Download to read offline
@@ -37,7 +37,7 @@ It downloads the entire chat history and includes your character settings. You c
 ###### Raw Dump (anonymous)
 This is a better option if you want to hide your first name, username, display name etc.
 ###### Download as example chat
-This turns all your history into example chat/definition format so you can use them in CAI and Pygmalion AI. It downloads a .txt file, which is a text document. All you need to do is copy pasting the content.
+This turns all your history into example chat/definition format so you can use them in CAI and other AI chat platforms. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
 
 ###### Tavern Chats (zip/jsonl)
 Similar to "Download as Tavern chat". You can download all chats in one go in Tavern format. It will download a zip file that contains .jsonl files.

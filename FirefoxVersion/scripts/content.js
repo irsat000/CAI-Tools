@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.5.4";
+    const extVersion = "1.5.5";
 
     const metadata = {
         version: 1,
@@ -272,7 +272,8 @@
                 }
             }, 1000);
         }
-        else if (window.location.href.includes("character.ai/chat")) {
+        else if (window.location.href.includes("character.ai/chat") ||
+            window.location.href.includes("character.ai/chat2")) {
             let ch_header = document.querySelector('.chattop');
             let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
 
@@ -801,7 +802,7 @@
             count = index + 1;
             const blob = CreateTavernChatBlob(chat.msgs);
             const arraybuffer = await readAsBinaryString(blob);
-            zip.file(`chat_${index + 1}.jsonl`, arraybuffer, {binary: true});
+            zip.file(`chat_${index + 1}.jsonl`, arraybuffer, { binary: true });
         });
 
         Promise.all(filePromises).then(() => {
@@ -1087,11 +1088,11 @@
     }
 
     // Might be unnecessary when I have getMembership()
-    function checkPlus(){
+    function checkPlus() {
         return window.location.hostname.indexOf("plus") > -1 ? true : false;
     }
 
-    function getMembership(){
+    function getMembership() {
         return window.location.hostname.indexOf("plus") > -1 ? "plus" : "beta";
     }
 

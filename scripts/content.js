@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.5.4";
+    const extVersion = "1.6.0";
 
     const metadata = {
         version: 1,
@@ -37,6 +37,7 @@
         }
         else if (name === "Reset_Modal") {
             handleProgressInfoMeta(`(Loading...)`);
+            cleanDOM();
         }
     });
 
@@ -54,6 +55,13 @@
             meta.setAttribute('cai_progressinfo', text);
             document.head.appendChild(meta);
         }
+    }
+
+    function cleanDOM() {
+        let container = document.querySelector('.apppage');
+        container.querySelectorAll('[data-tool="cai_tools"]').forEach(element => {
+            element.remove();
+        });
     }
 
     function createFetchStartedMeta_Conversation(text, extId) {
@@ -263,40 +271,46 @@
 
     function initialize_options_DOM() {
         if (window.location.href.includes("character.ai/histories")) {
-            let ch_header = document.querySelector('.home-sec-header');
             const intervalId = setInterval(() => {
-                ch_header = document.querySelector('.home-sec-header');
-                if (ch_header != null) {
+                let container = document.querySelector('.apppage');
+                if (container != null) {
                     clearInterval(intervalId);
-                    create_options_DOM_History(ch_header);
+                    create_options_DOM_History(container);
+                }
+            }, 1000);
+        }
+        else if (window.location.href.includes("character.ai/chat2")) {
+            const intervalId = setInterval(() => {
+                let container = document.querySelector('.apppage');
+                if (container != null) {
+                    clearInterval(intervalId);
+                    create_options_DOM_Conversation(container, "chat2");
                 }
             }, 1000);
         }
         else if (window.location.href.includes("character.ai/chat")) {
-            let ch_header = document.querySelector('.chattop');
-            let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
-
             const intervalId = setInterval(() => {
-                ch_header = document.querySelector('.chattop');
-                currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
-                if (ch_header != null && currentConverExtIdMeta != null) {
+                let container = document.querySelector('.apppage');
+                if (container != null) {
                     clearInterval(intervalId);
-                    create_options_DOM_Conversation(ch_header);
+                    create_options_DOM_Conversation(container, "chat");
                 }
+                /*let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
+                && currentConverExtIdMeta != null*/
             }, 1000);
         }
     }
 
-    function create_options_DOM_Conversation(ch_header) {
+    function create_options_DOM_Conversation(container, pageType) {
         //check if already exists
-        if (ch_header.querySelector('.cai_tools-btn')) {
+        if (container.querySelector('.cai_tools-btn')) {
             return;
         }
 
         //Create cai tools in dom
         const cai_tools_string = `
-            <button class="cai_tools-btn">CAI Tools</button>
-            <div class="cai_tools-cont">
+            <button class="cai_tools-btn" data-tool="cai_tools">CAI Tools</button>
+            <div class="cai_tools-cont" data-tool="cai_tools">
                 <div class="cai_tools">
                     <div class="cait-header">
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
@@ -319,7 +333,7 @@
                     </div>
                 </div>
             </div>
-            <div class="cait_settings-cont">
+            <div class="cait_settings-cont" data-tool="cai_tools">
                 <div class="cait_settings">
                     <div class="caits_header">
                         <h4>Settings</h4><span class="caits-close">x</span>
@@ -330,98 +344,106 @@
                 </div>
             </div>
         `;
-        ch_header.appendChild(parseHTML(cai_tools_string));
+        container.appendChild(parseHTML(cai_tools_string));
 
         //open modal upon click on btn
-        const currentConverExtId = document.querySelector('meta[cai_currentConverExtId]').getAttribute('cai_currentConverExtId');
-        const checkExistingConver = document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`);
-        ch_header.querySelector('.cai_tools-btn').addEventListener('click', () => {
-            ch_header.querySelector('.cai_tools-cont').classList.add('active');
+        const currentConverExtId = document.querySelector('meta[cai_currentConverExtId]')?.getAttribute('cai_currentConverExtId');
+        const checkExistingConver = pageType === "chat"
+            ? document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`)
+            : 1;
+        container.querySelector('.cai_tools-btn').addEventListener('click', () => {
+            container.querySelector('.cai_tools-cont').classList.add('active');
 
-
-            const fetchStarted = document.querySelector(`meta[cai_fetchStarted_conver][cai_fetchStatusExtId="${currentConverExtId}"]`)
-                ?.getAttribute('cai_fetchStarted_conver');
-            if ((checkExistingConver == null || checkExistingConver.getAttribute('cai_conversation') == null) && fetchStarted !== "true") {
-                fetchConversation(currentConverExtId);
+            if (pageType === "chat") {
+                const fetchStarted = document.querySelector(`meta[cai_fetchStarted_conver][cai_fetchStatusExtId="${currentConverExtId}"]`)
+                    ?.getAttribute('cai_fetchStarted_conver');
+                if ((checkExistingConver == null || checkExistingConver.getAttribute('cai_conversation') == null) && fetchStarted !== "true") {
+                    fetchConversation(currentConverExtId);
+                }
             }
         });
 
         //close modal
-        ch_header.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
+        container.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
             const target = event.target;
             if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
-                close_caiToolsModal(ch_header);
+                close_caiToolsModal(container);
             }
         });
-        ch_header.querySelector('.cait_settings-cont').addEventListener('click', (event) => {
+        container.querySelector('.cait_settings-cont').addEventListener('click', (event) => {
             const target = event.target;
             if (target.classList.contains('cait_settings-cont') || target.classList.contains('caits-close')) {
-                close_caitSettingsModal(ch_header);
+                close_caitSettingsModal(container);
             }
         });
 
-        const converStatusInterval = setInterval(() => {
-            if (checkExistingConver != null && checkExistingConver.getAttribute('cai_conversation') != null) {
-                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
-                clearInterval(converStatusInterval);
-                return;
-            }
-            const converStatus = document.querySelector(`meta[cai_progressinfo]`);
-            if (converStatus != null) {
-                const converStatusText = converStatus.getAttribute('cai_progressinfo');
-                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = converStatusText;
-                if (converStatusText === '(Ready!)') {
+        if (pageType === "chat") {
+            const converStatusInterval = setInterval(() => {
+                if (checkExistingConver != null && checkExistingConver.getAttribute('cai_conversation') != null) {
+                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
                     clearInterval(converStatusInterval);
+                    return;
                 }
-            }
-        }, 1000);
+                const converStatus = document.querySelector(`meta[cai_progressinfo]`);
+                if (converStatus != null) {
+                    const converStatusText = converStatus.getAttribute('cai_progressinfo');
+                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = converStatusText;
+                    if (converStatusText === '(Ready!)') {
+                        clearInterval(converStatusInterval);
+                    }
+                }
+            }, 1000);
+        }
+        else {
+            container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
+        }
 
 
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_hybrid' };
             DownloadCharacter(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="character_card"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="character_card"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_card' };
             DownloadCharacter(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="character_settings"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="character_settings"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_settings' };
             DownloadCharacter(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
 
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'oobabooga' };
+        container.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'oobabooga', pageType: pageType };
             DownloadConversation(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'tavern' };
+        container.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'tavern', pageType: pageType };
             DownloadConversation(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'example_chat' };
+        container.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'example_chat', pageType: pageType };
             DownloadConversation(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
     }
 
-    function create_options_DOM_History(ch_header) {
+    function create_options_DOM_History(container) {
         const charId = getCharId();
 
         //check if already exists
-        if (ch_header.querySelector('.cai_tools-btn')) {
+        if (container.querySelector('.cai_tools-btn')) {
             return;
         }
 
         //Create cai tools in dom
         const cai_tools_string = `
-            <button class="cai_tools-btn">CAI Tools</button>
-            <div class="cai_tools-cont">
+            <button class="cai_tools-btn" data-tool="cai_tools">CAI Tools</button>
+            <div class="cai_tools-cont" data-tool="cai_tools">
                 <div class="cai_tools">
                     <div class="cait-header">
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
@@ -447,13 +469,13 @@
                 <li data-cait_type=''>)</li>
             </ul>
         */
-        ch_header.appendChild(parseHTML(cai_tools_string));
+        container.appendChild(parseHTML(cai_tools_string));
 
         const historyMeta = document.querySelector(`meta[cai_charid="${charId}"][cai_history]`);
 
         //open modal upon click on btn
-        ch_header.querySelector('.cai_tools-btn').addEventListener('click', () => {
-            ch_header.querySelector('.cai_tools-cont').classList.add('active');
+        container.querySelector('.cai_tools-btn').addEventListener('click', () => {
+            container.querySelector('.cai_tools-cont').classList.add('active');
 
             const fetchStarted = document.querySelector(`meta[cai_fetchStarted][cai_fetchStatusCharId="${charId}"]`)
                 ?.getAttribute('cai_fetchStarted');
@@ -464,23 +486,23 @@
         });
 
         //close modal
-        ch_header.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
+        container.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
             const target = event.target;
             if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
-                close_caiToolsModal(ch_header);
+                close_caiToolsModal(container);
             }
         });
 
         const histStatusInterval = setInterval(() => {
             if (historyMeta != null && historyMeta.getAttribute('cai_history') != null) {
-                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
+                container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
                 clearInterval(histStatusInterval);
                 return;
             }
             const histStatus = document.querySelector(`meta[cai_progressinfo]`);
             if (histStatus != null) {
                 const histStatusText = histStatus.getAttribute('cai_progressinfo');
-                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
+                container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
                 if (histStatusText === '(Ready!)') {
                     clearInterval(histStatusInterval);
                 }
@@ -488,30 +510,30 @@
         }, 1000);
 
 
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_offline_read' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
             const args = { downloadType: 'example_chat' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_dump"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_dump"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_dump' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_dump_anon"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_dump_anon"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_dump_anon' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_tavern_history"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_tavern_history"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_tavern_history' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
 
     }
@@ -530,12 +552,17 @@
 
     // CONVERSATION
     function DownloadConversation(args) {
-        const chatData = document.querySelector(`meta[cai_converExtId="${args.extId}"]`)?.getAttribute('cai_conversation') != null
-            ? JSON.parse(document.querySelector(`meta[cai_converExtId="${args.extId}"]`).getAttribute('cai_conversation'))
-            : null;
+        const pageType = args.pageType;
+        const chatData = pageType === "chat"
+            ? document.querySelector(`meta[cai_converExtId="${args.extId}"]`)?.getAttribute('cai_conversation') != null
+                ? JSON.parse(document.querySelector(`meta[cai_converExtId="${args.extId}"]`).getAttribute('cai_conversation'))
+                : null
+            : JSON.parse(document.querySelector('meta[cai_currentChat2]').getAttribute('cai_currentChat2'));
+
+        console.log(chatData);
 
         if (chatData == null) {
-            alert("Data is empty or not ready. Try again later.")
+            alert("Data doesn't exist or not ready. Try again later.")
             return;
         }
 
@@ -801,7 +828,7 @@
             count = index + 1;
             const blob = CreateTavernChatBlob(chat.msgs);
             const arraybuffer = await readAsBinaryString(blob);
-            zip.file(`chat_${index + 1}.jsonl`, arraybuffer, {binary: true});
+            zip.file(`chat_${index + 1}.jsonl`, arraybuffer, { binary: true });
         });
 
         Promise.all(filePromises).then(() => {
@@ -1087,11 +1114,11 @@
     }
 
     // Might be unnecessary when I have getMembership()
-    function checkPlus(){
+    function checkPlus() {
         return window.location.hostname.indexOf("plus") > -1 ? true : false;
     }
 
-    function getMembership(){
+    function getMembership() {
         return window.location.hostname.indexOf("plus") > -1 ? "plus" : "beta";
     }
 

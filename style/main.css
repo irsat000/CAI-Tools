@@ -1,5 +1,7 @@
 .cai_tools-btn {
-    position: unset;
+    z-index: 998;
+    position: fixed;
+    opacity: 0.7;
     align-self: flex-start;
     width: unset !important;
     right: 20px;
@@ -12,7 +14,6 @@
     transition: all 0.1s ease;
     font-size: 1rem;
     background-color: #06689d;
-    margin-left: auto;
 }
 
 .cai_tools-btn:hover {
@@ -24,6 +25,7 @@
 .cait_settings-cont {
     display: none;
     /*flex*/
+    z-index: 999;
     position: fixed;
     top: 0;
     bottom: 0;
@@ -165,12 +167,6 @@
 }
 
 @media (min-width: 768px) {
-    .cai_tools-btn {
-        position: fixed;
-        opacity: 0.7;
-        margin-left: unset;
-    }
-
     .cai_tools {
         max-width: 360px;
     }

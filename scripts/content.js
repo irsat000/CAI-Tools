@@ -290,13 +290,12 @@
         }
         else if (window.location.href.includes("character.ai/chat")) {
             const intervalId = setInterval(() => {
+                let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
                 let container = document.querySelector('.apppage');
-                if (container != null) {
+                if (container != null && currentConverExtIdMeta != null) {
                     clearInterval(intervalId);
                     create_options_DOM_Conversation(container, "chat");
                 }
-                /*let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
-                && currentConverExtIdMeta != null*/
             }, 1000);
         }
     }
@@ -559,89 +558,171 @@
                 : null
             : JSON.parse(document.querySelector('meta[cai_currentChat2]').getAttribute('cai_currentChat2'));
 
-        console.log(chatData);
-
         if (chatData == null) {
             alert("Data doesn't exist or not ready. Try again later.")
             return;
         }
 
+        console.log(chatData);
+
+        let charName = pageType === "chat"
+            ? chatData[0].src__name
+            : chatData.turns[chatData.turns.length - 1].author.name;
+
         switch (args.downloadType) {
             case "oobabooga":
-                DownloadConversation_Oobabooga(chatData, args);
+                DownloadConversation_Oobabooga(chatData, args, charName);
                 break;
             case "tavern":
-                DownloadConversation_Tavern(chatData, args);
+                DownloadConversation_Tavern(chatData, args, charName);
                 break;
             case "example_chat":
-                DownloadConversation_ChatExample(chatData, args);
+                DownloadConversation_ChatExample(chatData, args, charName);
                 break;
             default:
                 break;
         }
-        console.log(chatData);
     }
 
-    function DownloadConversation_Oobabooga(chatData, args) {
+    function DownloadConversation_Oobabooga(chatData, args, charName) {
         const ChatObject = {
             data: [],
             data_visible: [],
         };
-        chatData.shift();
-        let currentPair = [];
-        chatData.filter(msg => msg.is_alternative === false)
-            .forEach((msg, index) => {
+
+        if (args.pageType === "chat") {
+            chatData.shift();
+            let currentPair = [];
+            chatData.filter(msg => msg.is_alternative === false)
+                .forEach((msg, index) => {
+                    if (index % 2 == 0) {
+                        currentPair = [];
+                        currentPair.push(msg.text);
+                    }
+                    else {
+                        currentPair.push(msg.text);
+                        ChatObject.data.push(currentPair);
+                        ChatObject.data_visible.push(currentPair);
+                    }
+                });
+        }
+        else if (args.pageType === "chat2") {
+            const turns = chatData.turns.reverse();
+            turns.shift();
+            turns.forEach((msg, index) => {
                 if (index % 2 == 0) {
                     currentPair = [];
-                    currentPair.push(msg.text);
+                    currentPair.push(msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error");
                 }
                 else {
-                    currentPair.push(msg.text);
+                    currentPair.push(msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error");
                     ChatObject.data.push(currentPair);
                     ChatObject.data_visible.push(currentPair);
                 }
             });
+        }
 
         const Data_FinalForm = JSON.stringify(ChatObject);
         const blob = new Blob([Data_FinalForm], { type: 'text/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${args.extId.substring(0, 8)}_${args.downloadType}_Chat.json`;
+        link.download = `${charName}_${args.downloadType}_Chat.json`;
         link.click();
     }
 
-    function DownloadConversation_Tavern(chatData, args) {
+    function DownloadConversation_Tavern(chatData, args, charName) {
         if (chatData.length <= 1) {
             alert("The conversation is empty.")
             return;
         }
-        const blob = CreateTavernChatBlob(chatData);
+        const blob = CreateTavernChatBlob(chatData, args, charName);
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${args.extId.substring(0, 8)}_${args.downloadType}_Chat.jsonl`;
+        link.download = `${charName}_${args.downloadType}_Chat.jsonl`;
         link.click();
     }
 
-    function DownloadConversation_ChatExample(chatData, args) {
+    function DownloadConversation_ChatExample(chatData, args, charName) {
         const messageList = [];
         messageList.push("<START>");
-        chatData.filter(msg => msg.is_alternative === false)
-            .forEach(msg => {
-                const user = msg.src__is_human ? "user" : "char";
-                const message = `{{${user}}}: ${msg.text}`;
+        if (args.pageType === "chat") {
+            chatData.filter(msg => msg.is_alternative === false)
+                .forEach(msg => {
+                    const user = msg.src__is_human ? "user" : "char";
+                    const message = `{{${user}}}: ${msg.text}`;
+                    messageList.push(message);
+                });
+        }
+        else if (args.pageType === "chat2") {
+            const turns = chatData.turns.reverse();
+            turns.forEach(msg => {
+                const user = msg.author.is_human ? "user" : "char";
+                const message = `{{${user}}}: ${msg.candidates[msg.candidates.length - 1].raw_content}`;
                 messageList.push(message);
             });
+        }
         const chatString = messageList.join("\n");
 
         const blob = new Blob([chatString], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${args.extId.substring(0, 8)}_Example.txt`;
+        link.download = `${charName}_Example.txt`;
         link.click();
     }
+
+    function CreateTavernChatBlob(chatData, args, charName) {
+        const userName = 'You';
+        const createDate = Date.now();
+        const initialPart = JSON.stringify({
+            user_name: userName,
+            character_name: charName,
+            create_date: createDate,
+        });
+        const outputLines = [initialPart];
+
+        if (args.pageType === "chat") {
+            chatData.filter(msg => msg.is_alternative === false).forEach((msg, index) => {
+                let currentUser = index % 2 == 0
+                    ? charName
+                    : "You";
+                const formattedMessage = JSON.stringify({
+                    name: currentUser,
+                    is_user: currentUser === "You",
+                    is_name: true,
+                    send_date: Date.now(),
+                    mes: msg.text
+                });
+
+                outputLines.push(formattedMessage);
+            });
+        }
+        else {
+            const turns = chatData.turns.reverse();
+            turns.shift();
+            turns.forEach((msg, index) => {
+                let currentUser = index % 2 == 0
+                    ? charName
+                    : "You";
+                const formattedMessage = JSON.stringify({
+                    name: currentUser,
+                    is_user: currentUser === "You",
+                    is_name: true,
+                    send_date: Date.now(),
+                    mes: msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error"
+                });
+
+                outputLines.push(formattedMessage);
+            });
+        }
+        const outputString = outputLines.join('\n');
+
+        return new Blob([outputString], { type: 'application/jsonl' });
+    }
+
+
 
     // HISTORY
 
@@ -826,7 +907,8 @@
         let count = 0;
         const filePromises = histories.filter(v => v.msgs != null && v.msgs.length > 1).map(async (chat, index) => {
             count = index + 1;
-            const blob = CreateTavernChatBlob(chat.msgs);
+            const charName = chat.msgs[0].display_name ?? chat.msgs[0].src.name;
+            const blob = CreateTavernChatBlob(chat.msgs, { pageType: "chat" }, charName);
             const arraybuffer = await readAsBinaryString(blob);
             zip.file(`chat_${index + 1}.jsonl`, arraybuffer, { binary: true });
         });
@@ -1060,37 +1142,6 @@
 
 
 
-
-    function CreateTavernChatBlob(chatData) {
-        const userName = 'You';
-        const characterName = chatData[0].src__name ?? chatData[0].src.name;
-        const createDate = Date.now();
-        const initialPart = JSON.stringify({
-            user_name: userName,
-            character_name: characterName,
-            create_date: createDate,
-        });
-        const outputLines = [initialPart];
-
-        chatData.filter(msg => msg.is_alternative === false).forEach((message) => {
-            let currentUser = message.src__name != characterName && message.src.name != characterName
-                ? "You"
-                : characterName;
-            const formattedMessage = JSON.stringify({
-                name: currentUser,
-                is_user: currentUser === "You",
-                is_name: true,
-                send_date: Date.now(),
-                mes: message.text,
-            });
-
-            outputLines.push(formattedMessage);
-        });
-
-        const outputString = outputLines.join('\n');
-
-        return new Blob([outputString], { type: 'application/jsonl' });
-    }
 
 
 

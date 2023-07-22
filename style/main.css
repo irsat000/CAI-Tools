@@ -1,11 +1,38 @@
-.cai_tools-btn {
+.cait_button-cont {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    cursor: grab;
+
     z-index: 998;
     position: fixed;
-    opacity: 0.7;
-    align-self: flex-start;
-    width: unset !important;
     right: 20px;
     top: 20px;
+}
+
+.dragCaitBtn {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    min-width: 30px;
+    max-width: 50px;
+    border-radius: 6px;
+    color: #fff;
+    transition: all 0.1s ease;
+    background-color: #06689d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dragCaitBtn:hover {
+    background-color: #2577a3;
+}
+
+.cai_tools-btn {
+    white-space: nowrap;
+    opacity: 0.9;
+    align-self: flex-start;
+    width: unset !important;
     outline: transparent;
     border: 1px solid #fff;
     color: #fff;
@@ -108,17 +135,17 @@
     padding: 10px 14px;
 }
 
-.cait_settings pre{
+.cait_settings pre {
     white-space: pre-wrap;
 }
-.cait_settings pre .cait_jv_prop{
+
+.cait_settings pre .cait_jv_prop {
     color: #c41313;
 }
 
 .cai_tools .cait-body span.cait_warning {
     display: none;
-    padding: 0 10px;
-    margin-bottom: 10px;
+    padding: 0px 4px 8px;
     color: rgb(186, 30, 30);
     font-size: 13px;
     font-weight: 300;
@@ -167,6 +194,10 @@
 }
 
 @media (min-width: 768px) {
+    .cai_tools-btn {
+        opacity: 0.6;
+    }
+
     .cai_tools {
         max-width: 360px;
     }

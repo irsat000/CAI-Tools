@@ -1,5 +1,5 @@
 # CAI Tools
-This chrome/firefox extension is made for the purpose of getting the data of beta.character.ai characters in various formats.
+This chrome/firefox extension is made for the purpose of getting the data of character.ai characters in various formats.
 
 ###### Links
 Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje?hl=en
@@ -13,7 +13,10 @@ For history data, navigate to "View Chat Histories".
 Click on CAI Tools button on top right corner to open the menu. You will see all the features in there.
 
 Some of the features will be available after some time has passed.
+# News
+Character AI developers are constantly updating the website. This comes with many new issues for this extension and I would like to have your Github issues or emails for reporting.
 
+Last update introduced a new chat page, you will see "character.ai/chat2" path on the address. Version 1.6.0 and above will fix that issue.
 # Feature List
 ### Conversation Page
 ###### Download Character (json)
@@ -30,6 +33,7 @@ It downloads the conversation in Tavern chat format. You can continue the conver
 This turns the conversation into example chat/definition format so you can use it in CAI and other AI chat platforms. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
 
 ### History Page
+Only in histories, "chat2" conversations are currently inaccessible by this tool. Wish me luck!
 ###### Download to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.
 ###### Raw Dump (json)
@@ -43,6 +47,8 @@ This turns all your history into example chat/definition format so you can use t
 Similar to "Download as Tavern chat". You can download all chats in one go in Tavern format. It will download a zip file that contains .jsonl files.
 
 ### Misc
+###### Drag and Remove Button
+You can drag the button by its appendage on the left. If tapped 3 times consecutively on the appendage, it will remove the button until page reload.
 ###### Passive
 Shows up to 999 chats in "View Chat Histories". You can download it all. The limit they put was originally 50.
 ###### JSON_to_ReadOffline.html

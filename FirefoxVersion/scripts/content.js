@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.5.5";
+    const extVersion = "1.6.0";
 
     const metadata = {
         version: 1,
@@ -37,6 +37,7 @@
         }
         else if (name === "Reset_Modal") {
             handleProgressInfoMeta(`(Loading...)`);
+            cleanDOM();
         }
     });
 
@@ -54,6 +55,13 @@
             meta.setAttribute('cai_progressinfo', text);
             document.head.appendChild(meta);
         }
+    }
+
+    function cleanDOM() {
+        let container = document.querySelector('.apppage');
+        container.querySelectorAll('[data-tool="cai_tools"]').forEach(element => {
+            element.remove();
+        });
     }
 
     function createFetchStartedMeta_Conversation(text, extId) {
@@ -263,41 +271,46 @@
 
     function initialize_options_DOM() {
         if (window.location.href.includes("character.ai/histories")) {
-            let ch_header = document.querySelector('.home-sec-header');
             const intervalId = setInterval(() => {
-                ch_header = document.querySelector('.home-sec-header');
-                if (ch_header != null) {
+                let container = document.querySelector('.apppage');
+                if (container != null) {
                     clearInterval(intervalId);
-                    create_options_DOM_History(ch_header);
+                    create_options_DOM_History(container);
                 }
             }, 1000);
         }
-        else if (window.location.href.includes("character.ai/chat") ||
-            window.location.href.includes("character.ai/chat2")) {
-            let ch_header = document.querySelector('.chattop');
-            let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
-
+        else if (window.location.href.includes("character.ai/chat2")) {
             const intervalId = setInterval(() => {
-                ch_header = document.querySelector('.chattop');
-                currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
-                if (ch_header != null && currentConverExtIdMeta != null) {
+                let container = document.querySelector('.apppage');
+                if (container != null) {
                     clearInterval(intervalId);
-                    create_options_DOM_Conversation(ch_header);
+                    create_options_DOM_Conversation(container, "chat2");
+                }
+            }, 1000);
+        }
+        else if (window.location.href.includes("character.ai/chat")) {
+            const intervalId = setInterval(() => {
+                let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
+                let container = document.querySelector('.apppage');
+                if (container != null && currentConverExtIdMeta != null) {
+                    clearInterval(intervalId);
+                    create_options_DOM_Conversation(container, "chat");
                 }
             }, 1000);
         }
     }
 
-    function create_options_DOM_Conversation(ch_header) {
-        //check if already exists
-        if (ch_header.querySelector('.cai_tools-btn')) {
-            return;
-        }
+    function create_options_DOM_Conversation(container, pageType) {
+        //clean if already exists
+        cleanDOM();
 
         //Create cai tools in dom
         const cai_tools_string = `
-            <button class="cai_tools-btn">CAI Tools</button>
-            <div class="cai_tools-cont">
+            <div class="cait_button-cont" data-tool="cai_tools">
+                <div class="dragCaitBtn">&#9946;</div>
+                <button class="cai_tools-btn">CAI Tools</button>
+            </div>
+            <div class="cai_tools-cont" data-tool="cai_tools">
                 <div class="cai_tools">
                     <div class="cait-header">
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
@@ -320,7 +333,7 @@
                     </div>
                 </div>
             </div>
-            <div class="cait_settings-cont">
+            <div class="cait_settings-cont" data-tool="cai_tools">
                 <div class="cait_settings">
                     <div class="caits_header">
                         <h4>Settings</h4><span class="caits-close">x</span>
@@ -331,104 +344,116 @@
                 </div>
             </div>
         `;
-        ch_header.appendChild(parseHTML(cai_tools_string));
+        container.appendChild(parseHTML_caiTools(cai_tools_string));
 
         //open modal upon click on btn
-        const currentConverExtId = document.querySelector('meta[cai_currentConverExtId]').getAttribute('cai_currentConverExtId');
-        const checkExistingConver = document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`);
-        ch_header.querySelector('.cai_tools-btn').addEventListener('click', () => {
-            ch_header.querySelector('.cai_tools-cont').classList.add('active');
+        const currentConverExtId = document.querySelector('meta[cai_currentConverExtId]')?.getAttribute('cai_currentConverExtId');
+        const checkExistingConver = pageType === "chat"
+            ? document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`)
+            : 1;
+        container.querySelector('.cai_tools-btn').addEventListener('mouseup', clickOnBtn);
+        container.querySelector('.cai_tools-btn').addEventListener('touchstart', clickOnBtn);
 
+        function clickOnBtn() {
+            container.querySelector('.cai_tools-cont').classList.add('active');
 
-            const fetchStarted = document.querySelector(`meta[cai_fetchStarted_conver][cai_fetchStatusExtId="${currentConverExtId}"]`)
-                ?.getAttribute('cai_fetchStarted_conver');
-            if ((checkExistingConver == null || checkExistingConver.getAttribute('cai_conversation') == null) && fetchStarted !== "true") {
-                fetchConversation(currentConverExtId);
-            }
-        });
-
-        //close modal
-        ch_header.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
-            const target = event.target;
-            if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
-                close_caiToolsModal(ch_header);
-            }
-        });
-        ch_header.querySelector('.cait_settings-cont').addEventListener('click', (event) => {
-            const target = event.target;
-            if (target.classList.contains('cait_settings-cont') || target.classList.contains('caits-close')) {
-                close_caitSettingsModal(ch_header);
-            }
-        });
-
-        const converStatusInterval = setInterval(() => {
-            if (checkExistingConver != null && checkExistingConver.getAttribute('cai_conversation') != null) {
-                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
-                clearInterval(converStatusInterval);
-                return;
-            }
-            const converStatus = document.querySelector(`meta[cai_progressinfo]`);
-            if (converStatus != null) {
-                const converStatusText = converStatus.getAttribute('cai_progressinfo');
-                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = converStatusText;
-                if (converStatusText === '(Ready!)') {
-                    clearInterval(converStatusInterval);
+            if (pageType === "chat") {
+                const fetchStarted = document.querySelector(`meta[cai_fetchStarted_conver][cai_fetchStatusExtId="${currentConverExtId}"]`)
+                    ?.getAttribute('cai_fetchStarted_conver');
+                if ((checkExistingConver == null || checkExistingConver.getAttribute('cai_conversation') == null) && fetchStarted !== "true") {
+                    fetchConversation(currentConverExtId);
                 }
             }
-        }, 1000);
+        }
+
+        //close modal
+        container.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
+                close_caiToolsModal(container);
+            }
+        });
+        container.querySelector('.cait_settings-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cait_settings-cont') || target.classList.contains('caits-close')) {
+                close_caitSettingsModal(container);
+            }
+        });
+
+        if (pageType === "chat") {
+            const converStatusInterval = setInterval(() => {
+                if (checkExistingConver != null && checkExistingConver.getAttribute('cai_conversation') != null) {
+                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
+                    clearInterval(converStatusInterval);
+                    return;
+                }
+                const converStatus = document.querySelector(`meta[cai_progressinfo]`);
+                if (converStatus != null) {
+                    const converStatusText = converStatus.getAttribute('cai_progressinfo');
+                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = converStatusText;
+                    if (converStatusText === '(Ready!)') {
+                        clearInterval(converStatusInterval);
+                    }
+                }
+            }, 1000);
+        }
+        else {
+            container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
+        }
 
 
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_hybrid' };
             DownloadCharacter(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="character_card"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="character_card"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_card' };
             DownloadCharacter(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="character_settings"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="character_settings"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_settings' };
             DownloadCharacter(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
 
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'oobabooga' };
+        container.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'oobabooga', pageType: pageType };
             DownloadConversation(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'tavern' };
+        container.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'tavern', pageType: pageType };
             DownloadConversation(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'example_chat' };
+        container.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
+            const args = { extId: currentConverExtId, downloadType: 'example_chat', pageType: pageType };
             DownloadConversation(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
     }
 
-    function create_options_DOM_History(ch_header) {
+    function create_options_DOM_History(container) {
         const charId = getCharId();
 
-        //check if already exists
-        if (ch_header.querySelector('.cai_tools-btn')) {
-            return;
-        }
+        //clean if already exists
+        cleanDOM();
 
         //Create cai tools in dom
         const cai_tools_string = `
-            <button class="cai_tools-btn">CAI Tools</button>
-            <div class="cai_tools-cont">
+            <div class="cait_button-cont" data-tool="cai_tools">
+                <div class="dragCaitBtn">&#9946;</div>
+                <button class="cai_tools-btn">CAI Tools</button>
+            </div>
+            <div class="cai_tools-cont" data-tool="cai_tools">
                 <div class="cai_tools">
                     <div class="cait-header">
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
                     </div>
                     <div class="cait-body">
-                        <span class="cait_warning"></span>
+                        <span class="cait_warning" style="display: block;">"chat2" conversations in here are currently inaccessible.</span>
                         <h6>History</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
@@ -448,13 +473,15 @@
                 <li data-cait_type=''>)</li>
             </ul>
         */
-        ch_header.appendChild(parseHTML(cai_tools_string));
+        container.appendChild(parseHTML_caiTools(cai_tools_string));
 
         const historyMeta = document.querySelector(`meta[cai_charid="${charId}"][cai_history]`);
 
         //open modal upon click on btn
-        ch_header.querySelector('.cai_tools-btn').addEventListener('click', () => {
-            ch_header.querySelector('.cai_tools-cont').classList.add('active');
+        container.querySelector('.cai_tools-btn').addEventListener('mouseup', clickOnBtn);
+        container.querySelector('.cai_tools-btn').addEventListener('touchstart', clickOnBtn);
+        function clickOnBtn() {
+            container.querySelector('.cai_tools-cont').classList.add('active');
 
             const fetchStarted = document.querySelector(`meta[cai_fetchStarted][cai_fetchStatusCharId="${charId}"]`)
                 ?.getAttribute('cai_fetchStarted');
@@ -462,26 +489,26 @@
                 fetchedChatNumber = 1;
                 fetchHistory(charId);
             }
-        });
+        };
 
         //close modal
-        ch_header.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
+        container.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
             const target = event.target;
             if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
-                close_caiToolsModal(ch_header);
+                close_caiToolsModal(container);
             }
         });
 
         const histStatusInterval = setInterval(() => {
             if (historyMeta != null && historyMeta.getAttribute('cai_history') != null) {
-                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
+                container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
                 clearInterval(histStatusInterval);
                 return;
             }
             const histStatus = document.querySelector(`meta[cai_progressinfo]`);
             if (histStatus != null) {
                 const histStatusText = histStatus.getAttribute('cai_progressinfo');
-                ch_header.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
+                container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
                 if (histStatusText === '(Ready!)') {
                     clearInterval(histStatusInterval);
                 }
@@ -489,30 +516,30 @@
         }, 1000);
 
 
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_offline_read' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
             const args = { downloadType: 'example_chat' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_dump"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_dump"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_dump' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_dump_anon"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_dump_anon"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_dump_anon' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
-        ch_header.querySelector('.cai_tools-cont [data-cait_type="cai_tavern_history"]').addEventListener('click', () => {
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_tavern_history"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_tavern_history' };
             DownloadHistory(args);
-            close_caiToolsModal(ch_header);
+            close_caiToolsModal(container);
         });
 
     }
@@ -531,91 +558,178 @@
 
     // CONVERSATION
     function DownloadConversation(args) {
-        const chatData = document.querySelector(`meta[cai_converExtId="${args.extId}"]`)?.getAttribute('cai_conversation') != null
-            ? JSON.parse(document.querySelector(`meta[cai_converExtId="${args.extId}"]`).getAttribute('cai_conversation'))
-            : null;
+        const pageType = args.pageType;
+        const chatData = pageType === "chat"
+            ? document.querySelector(`meta[cai_converExtId="${args.extId}"]`)?.getAttribute('cai_conversation') != null
+                ? JSON.parse(document.querySelector(`meta[cai_converExtId="${args.extId}"]`).getAttribute('cai_conversation'))
+                : null
+            : JSON.parse(document.querySelector('meta[cai_currentChat2]').getAttribute('cai_currentChat2'));
 
         if (chatData == null) {
-            alert("Data is empty or not ready. Try again later.")
+            alert("Data doesn't exist or not ready. Try again later.")
             return;
         }
 
+        console.log(chatData);
+
+        let charName = pageType === "chat"
+            ? chatData[0].src__name
+            : chatData.turns[chatData.turns.length - 1].author.name;
+
         switch (args.downloadType) {
             case "oobabooga":
-                DownloadConversation_Oobabooga(chatData, args);
+                DownloadConversation_Oobabooga(chatData, args, charName);
                 break;
             case "tavern":
-                DownloadConversation_Tavern(chatData, args);
+                DownloadConversation_Tavern(chatData, args, charName);
                 break;
             case "example_chat":
-                DownloadConversation_ChatExample(chatData, args);
+                DownloadConversation_ChatExample(chatData, args, charName);
                 break;
             default:
                 break;
         }
-        console.log(chatData);
     }
 
-    function DownloadConversation_Oobabooga(chatData, args) {
+    function DownloadConversation_Oobabooga(chatData, args, charName) {
         const ChatObject = {
             data: [],
             data_visible: [],
         };
-        chatData.shift();
-        let currentPair = [];
-        chatData.filter(msg => msg.is_alternative === false)
-            .forEach((msg, index) => {
+
+        if (args.pageType === "chat") {
+            chatData.shift();
+            let currentPair = [];
+            chatData.filter(msg => msg.is_alternative === false)
+                .forEach((msg, index) => {
+                    if (index % 2 == 0) {
+                        currentPair = [];
+                        currentPair.push(msg.text);
+                    }
+                    else {
+                        currentPair.push(msg.text);
+                        ChatObject.data.push(currentPair);
+                        ChatObject.data_visible.push(currentPair);
+                    }
+                });
+        }
+        else if (args.pageType === "chat2") {
+            const turns = chatData.turns.reverse();
+            turns.shift();
+            turns.forEach((msg, index) => {
                 if (index % 2 == 0) {
                     currentPair = [];
-                    currentPair.push(msg.text);
+                    currentPair.push(msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error");
                 }
                 else {
-                    currentPair.push(msg.text);
+                    currentPair.push(msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error");
                     ChatObject.data.push(currentPair);
                     ChatObject.data_visible.push(currentPair);
                 }
             });
+        }
 
         const Data_FinalForm = JSON.stringify(ChatObject);
         const blob = new Blob([Data_FinalForm], { type: 'text/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${args.extId.substring(0, 8)}_${args.downloadType}_Chat.json`;
+        link.download = `${charName}_${args.downloadType}_Chat.json`;
         link.click();
     }
 
-    function DownloadConversation_Tavern(chatData, args) {
+    function DownloadConversation_Tavern(chatData, args, charName) {
         if (chatData.length <= 1) {
             alert("The conversation is empty.")
             return;
         }
-        const blob = CreateTavernChatBlob(chatData);
+        const blob = CreateTavernChatBlob(chatData, args, charName);
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${args.extId.substring(0, 8)}_${args.downloadType}_Chat.jsonl`;
+        link.download = `${charName}_${args.downloadType}_Chat.jsonl`;
         link.click();
     }
 
-    function DownloadConversation_ChatExample(chatData, args) {
+    function DownloadConversation_ChatExample(chatData, args, charName) {
         const messageList = [];
         messageList.push("<START>");
-        chatData.filter(msg => msg.is_alternative === false)
-            .forEach(msg => {
-                const user = msg.src__is_human ? "user" : "char";
-                const message = `{{${user}}}: ${msg.text}`;
+        if (args.pageType === "chat") {
+            chatData.filter(msg => msg.is_alternative === false)
+                .forEach(msg => {
+                    const user = msg.src__is_human ? "user" : "char";
+                    const message = `{{${user}}}: ${msg.text}`;
+                    messageList.push(message);
+                });
+        }
+        else if (args.pageType === "chat2") {
+            const turns = chatData.turns.reverse();
+            turns.forEach(msg => {
+                const user = msg.author.is_human ? "user" : "char";
+                const message = `{{${user}}}: ${msg.candidates[msg.candidates.length - 1].raw_content}`;
                 messageList.push(message);
             });
+        }
         const chatString = messageList.join("\n");
 
         const blob = new Blob([chatString], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${args.extId.substring(0, 8)}_Example.txt`;
+        link.download = `${charName}_Example.txt`;
         link.click();
     }
+
+    function CreateTavernChatBlob(chatData, args, charName) {
+        const userName = 'You';
+        const createDate = Date.now();
+        const initialPart = JSON.stringify({
+            user_name: userName,
+            character_name: charName,
+            create_date: createDate,
+        });
+        const outputLines = [initialPart];
+
+        if (args.pageType === "chat") {
+            chatData.filter(msg => msg.is_alternative === false).forEach((msg, index) => {
+                let currentUser = index % 2 == 0
+                    ? charName
+                    : "You";
+                const formattedMessage = JSON.stringify({
+                    name: currentUser,
+                    is_user: currentUser === "You",
+                    is_name: true,
+                    send_date: Date.now(),
+                    mes: msg.text
+                });
+
+                outputLines.push(formattedMessage);
+            });
+        }
+        else {
+            const turns = chatData.turns.reverse();
+            turns.shift();
+            turns.forEach((msg, index) => {
+                let currentUser = index % 2 == 0
+                    ? charName
+                    : "You";
+                const formattedMessage = JSON.stringify({
+                    name: currentUser,
+                    is_user: currentUser === "You",
+                    is_name: true,
+                    send_date: Date.now(),
+                    mes: msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error"
+                });
+
+                outputLines.push(formattedMessage);
+            });
+        }
+        const outputString = outputLines.join('\n');
+
+        return new Blob([outputString], { type: 'application/jsonl' });
+    }
+
+
 
     // HISTORY
 
@@ -800,7 +914,8 @@
         let count = 0;
         const filePromises = histories.filter(v => v.msgs != null && v.msgs.length > 1).map(async (chat, index) => {
             count = index + 1;
-            const blob = CreateTavernChatBlob(chat.msgs);
+            const charName = chat.msgs[0].display_name ?? chat.msgs[0].src.name;
+            const blob = CreateTavernChatBlob(chat.msgs, { pageType: "chat" }, charName);
             const arraybuffer = await readAsBinaryString(blob);
             zip.file(`chat_${index + 1}.jsonl`, arraybuffer, { binary: true });
         });
@@ -1035,39 +1150,6 @@
 
 
 
-    function CreateTavernChatBlob(chatData) {
-        const userName = 'You';
-        const characterName = chatData[0].src__name ?? chatData[0].src.name;
-        const createDate = Date.now();
-        const initialPart = JSON.stringify({
-            user_name: userName,
-            character_name: characterName,
-            create_date: createDate,
-        });
-        const outputLines = [initialPart];
-
-        chatData.filter(msg => msg.is_alternative === false).forEach((message) => {
-            let currentUser = message.src__name != characterName && message.src.name != characterName
-                ? "You"
-                : characterName;
-            const formattedMessage = JSON.stringify({
-                name: currentUser,
-                is_user: currentUser === "You",
-                is_name: true,
-                send_date: Date.now(),
-                mes: message.text,
-            });
-
-            outputLines.push(formattedMessage);
-        });
-
-        const outputString = outputLines.join('\n');
-
-        return new Blob([outputString], { type: 'application/jsonl' });
-    }
-
-
-
     function removeSpecialChars(str) {
         return str
             .replace(/[\\]/g, ' ')
@@ -1100,11 +1182,94 @@
         return document.querySelector('meta[cai_token]').getAttribute('cai_token');
     }
 
-    function parseHTML(html) {
+    function parseHTML_caiTools(html) {
         const template = document.createElement('template');
         template.innerHTML = html;
-        return template.content;
+        var content = template.content;
+
+        //Allows user to drag the button.
+        makeDraggable(content.querySelector('.cait_button-cont'));
+
+        //Three taps on dragger will remove the cai tools button.
+        const handleTapToDisable = (() => {
+            let tapCount = 0;
+            let tapTimer;
+
+            function resetTapCount() {
+                tapCount = 0;
+            }
+
+            return function () {
+                tapCount++;
+                if (tapCount === 1) {
+                    tapTimer = setTimeout(resetTapCount, 700); // Adjust the time window for detecting fast taps (in milliseconds)
+                } else if (tapCount === 3) {
+                    // Three taps occurred quickly
+                    cleanDOM();
+                    clearTimeout(tapTimer); // Clear the timer if three taps are reached
+                }
+            };
+        })();
+        content.querySelector(".dragCaitBtn").addEventListener("mouseup", handleTapToDisable);
+        content.querySelector(".dragCaitBtn").addEventListener("touchstart", handleTapToDisable);
+
+        return content;
     }
+
+    function makeDraggable(elmnt) {
+        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        if (document.querySelector(".dragCaitBtn")) {
+            // if present, the header is where you move the DIV from:
+            document.querySelector(".dragCaitBtn").addEventListener("mousedown", dragMouseDown);
+            document.querySelector(".dragCaitBtn").addEventListener("touchstart", dragMouseDown);
+        } else {
+            // otherwise, move the DIV from anywhere inside the DIV:
+            elmnt.addEventListener("mousedown", dragMouseDown);
+            elmnt.addEventListener("touchstart", dragMouseDown);
+        }
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // get the mouse cursor position at startup:
+            pos3 = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+            pos4 = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+            document.addEventListener("mouseup", closeDragElement);
+            document.addEventListener("touchend", closeDragElement);
+            // call a function whenever the touch/mouse cursor moves:
+            document.addEventListener("mousemove", elementDrag);
+            document.addEventListener("touchmove", elementDrag);
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // calculate the new cursor position:
+            pos1 = pos3 - (e.type === "touchmove" ? e.touches[0].clientX : e.clientX);
+            pos2 = pos4 - (e.type === "touchmove" ? e.touches[0].clientY : e.clientY);
+            pos3 = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+            pos4 = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+            // set the element's new position:
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        }
+
+        function closeDragElement() {
+            // stop moving when mouse button is released:
+            document.removeEventListener("mouseup", closeDragElement);
+            document.removeEventListener("touchend", closeDragElement);
+            document.removeEventListener("mousemove", elementDrag);
+            document.removeEventListener("touchmove", elementDrag);
+        }
+    }
+
+
+
+
+
+
+
+
 
     // Source: https://github.com/hughsk/png-chunks-extract
     var uint8 = new Uint8Array(4)

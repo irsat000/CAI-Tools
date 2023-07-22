@@ -301,14 +301,15 @@
     }
 
     function create_options_DOM_Conversation(container, pageType) {
-        //check if already exists
-        if (container.querySelector('.cai_tools-btn')) {
-            return;
-        }
+        //clean if already exists
+        cleanDOM();
 
         //Create cai tools in dom
         const cai_tools_string = `
-            <button class="cai_tools-btn" data-tool="cai_tools">CAI Tools</button>
+            <div class="cait_button-cont" data-tool="cai_tools">
+                <div class="dragCaitBtn">&#9946;</div>
+                <button class="cai_tools-btn">CAI Tools</button>
+            </div>
             <div class="cai_tools-cont" data-tool="cai_tools">
                 <div class="cai_tools">
                     <div class="cait-header">
@@ -343,14 +344,17 @@
                 </div>
             </div>
         `;
-        container.appendChild(parseHTML(cai_tools_string));
+        container.appendChild(parseHTML_caiTools(cai_tools_string));
 
         //open modal upon click on btn
         const currentConverExtId = document.querySelector('meta[cai_currentConverExtId]')?.getAttribute('cai_currentConverExtId');
         const checkExistingConver = pageType === "chat"
             ? document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`)
             : 1;
-        container.querySelector('.cai_tools-btn').addEventListener('click', () => {
+        container.querySelector('.cai_tools-btn').addEventListener('mouseup', clickOnBtn);
+        container.querySelector('.cai_tools-btn').addEventListener('touchstart', clickOnBtn);
+
+        function clickOnBtn() {
             container.querySelector('.cai_tools-cont').classList.add('active');
 
             if (pageType === "chat") {
@@ -360,7 +364,7 @@
                     fetchConversation(currentConverExtId);
                 }
             }
-        });
+        }
 
         //close modal
         container.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
@@ -434,21 +438,22 @@
     function create_options_DOM_History(container) {
         const charId = getCharId();
 
-        //check if already exists
-        if (container.querySelector('.cai_tools-btn')) {
-            return;
-        }
+        //clean if already exists
+        cleanDOM();
 
         //Create cai tools in dom
         const cai_tools_string = `
-            <button class="cai_tools-btn" data-tool="cai_tools">CAI Tools</button>
+            <div class="cait_button-cont" data-tool="cai_tools">
+                <div class="dragCaitBtn">&#9946;</div>
+                <button class="cai_tools-btn">CAI Tools</button>
+            </div>
             <div class="cai_tools-cont" data-tool="cai_tools">
                 <div class="cai_tools">
                     <div class="cait-header">
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
                     </div>
                     <div class="cait-body">
-                        <span class="cait_warning"></span>
+                        <span class="cait_warning" style="display: block;">"chat2" conversations in here are currently inaccessible.</span>
                         <h6>History</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
@@ -468,12 +473,14 @@
                 <li data-cait_type=''>)</li>
             </ul>
         */
-        container.appendChild(parseHTML(cai_tools_string));
+        container.appendChild(parseHTML_caiTools(cai_tools_string));
 
         const historyMeta = document.querySelector(`meta[cai_charid="${charId}"][cai_history]`);
 
         //open modal upon click on btn
-        container.querySelector('.cai_tools-btn').addEventListener('click', () => {
+        container.querySelector('.cai_tools-btn').addEventListener('mouseup', clickOnBtn);
+        container.querySelector('.cai_tools-btn').addEventListener('touchstart', clickOnBtn);
+        function clickOnBtn() {
             container.querySelector('.cai_tools-cont').classList.add('active');
 
             const fetchStarted = document.querySelector(`meta[cai_fetchStarted][cai_fetchStatusCharId="${charId}"]`)
@@ -482,7 +489,7 @@
                 fetchedChatNumber = 1;
                 fetchHistory(charId);
             }
-        });
+        };
 
         //close modal
         container.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
@@ -1143,8 +1150,6 @@
 
 
 
-
-
     function removeSpecialChars(str) {
         return str
             .replace(/[\\]/g, ' ')
@@ -1177,11 +1182,94 @@
         return document.querySelector('meta[cai_token]').getAttribute('cai_token');
     }
 
-    function parseHTML(html) {
+    function parseHTML_caiTools(html) {
         const template = document.createElement('template');
         template.innerHTML = html;
-        return template.content;
+        var content = template.content;
+
+        //Allows user to drag the button.
+        makeDraggable(content.querySelector('.cait_button-cont'));
+
+        //Three taps on dragger will remove the cai tools button.
+        const handleTapToDisable = (() => {
+            let tapCount = 0;
+            let tapTimer;
+
+            function resetTapCount() {
+                tapCount = 0;
+            }
+
+            return function () {
+                tapCount++;
+                if (tapCount === 1) {
+                    tapTimer = setTimeout(resetTapCount, 700); // Adjust the time window for detecting fast taps (in milliseconds)
+                } else if (tapCount === 3) {
+                    // Three taps occurred quickly
+                    cleanDOM();
+                    clearTimeout(tapTimer); // Clear the timer if three taps are reached
+                }
+            };
+        })();
+        content.querySelector(".dragCaitBtn").addEventListener("mouseup", handleTapToDisable);
+        content.querySelector(".dragCaitBtn").addEventListener("touchstart", handleTapToDisable);
+
+        return content;
     }
+
+    function makeDraggable(elmnt) {
+        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        if (document.querySelector(".dragCaitBtn")) {
+            // if present, the header is where you move the DIV from:
+            document.querySelector(".dragCaitBtn").addEventListener("mousedown", dragMouseDown);
+            document.querySelector(".dragCaitBtn").addEventListener("touchstart", dragMouseDown);
+        } else {
+            // otherwise, move the DIV from anywhere inside the DIV:
+            elmnt.addEventListener("mousedown", dragMouseDown);
+            elmnt.addEventListener("touchstart", dragMouseDown);
+        }
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // get the mouse cursor position at startup:
+            pos3 = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+            pos4 = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+            document.addEventListener("mouseup", closeDragElement);
+            document.addEventListener("touchend", closeDragElement);
+            // call a function whenever the touch/mouse cursor moves:
+            document.addEventListener("mousemove", elementDrag);
+            document.addEventListener("touchmove", elementDrag);
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // calculate the new cursor position:
+            pos1 = pos3 - (e.type === "touchmove" ? e.touches[0].clientX : e.clientX);
+            pos2 = pos4 - (e.type === "touchmove" ? e.touches[0].clientY : e.clientY);
+            pos3 = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+            pos4 = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+            // set the element's new position:
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        }
+
+        function closeDragElement() {
+            // stop moving when mouse button is released:
+            document.removeEventListener("mouseup", closeDragElement);
+            document.removeEventListener("touchend", closeDragElement);
+            document.removeEventListener("mousemove", elementDrag);
+            document.removeEventListener("touchmove", elementDrag);
+        }
+    }
+
+
+
+
+
+
+
+
 
     // Source: https://github.com/hughsk/png-chunks-extract
     var uint8 = new Uint8Array(4)

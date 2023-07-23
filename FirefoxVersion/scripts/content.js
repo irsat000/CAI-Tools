@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.6.0";
+    const extVersion = "1.6.1";
 
     const metadata = {
         version: 1,
@@ -36,6 +36,7 @@
             initialize_options_DOM();
         }
         else if (name === "Reset_Modal") {
+            //document.querySelector(`meta[cai_currentConverExtId]`)?.remove(); //causes problems when the page is fast
             handleProgressInfoMeta(`(Loading...)`);
             cleanDOM();
         }
@@ -46,13 +47,13 @@
     // FETCH MESSAGES
 
     function handleProgressInfoMeta(text) {
-        if (document.querySelector('meta[cai_progressinfo]')) {
-            document.querySelector('meta[cai_progressinfo]')
-                .setAttribute('cai_progressinfo', text);
+        if (document.querySelector('meta[cait_progressInfo]')) {
+            document.querySelector('meta[cait_progressInfo]')
+                .setAttribute('cait_progressInfo', text);
         }
         else {
             const meta = document.createElement('meta');
-            meta.setAttribute('cai_progressinfo', text);
+            meta.setAttribute('cait_progressInfo', text);
             document.head.appendChild(meta);
         }
     }
@@ -173,8 +174,8 @@
                     });
                 }
                 else if (fetchDataType === "history") {
-                    handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${chatsLength} completed)`);
                     fetchedChatNumber++;
+                    handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${chatsLength} completed)`);
                 }
                 else if (fetchDataType === "conversation") {
                     if (converList.length > 0) {
@@ -194,7 +195,7 @@
                 }
             })
             .catch(async (err) => {
-                console.log("Likely rate limitting error. Will continue after 10 seconds.");
+                console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
                 await new Promise(resolve => setTimeout(resolve, 10000));
                 return await fetchMessages({
                     fetchDataType: fetchDataType,
@@ -208,16 +209,110 @@
             });
     };
 
-    const fetchHistory = async (charId) => {
-        createFetchStartedMeta("true");
-        const jsonData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_temphistory') != null
-            ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_temphistory'))
-            : null;
-        const AccessToken = getAccessToken();
+    const fetchMessagesChat2 = async ({ AccessToken, nextToken, converExtId, chatData, fetchDataType }) => {
+        //Will be similar to fetchMessages. Next token will come from the previous fetch.
+        //Last chat will give next token too.
+        //New fetch will repond with null next_token and empty turns.
+        await new Promise(resolve => setTimeout(resolve, 200));
+        let url = `https://neo.character.ai/turns/${converExtId}/`;
+        await fetch(url + (nextToken ? `?next_token=${nextToken}` : ""), {
+            "method": "GET",
+            "headers": {
+                "authorization": AccessToken,
+            }
+        })
+            .then((res) => res.json())
+            .then(async (data) => {
+                if (data.meta.next_token == null) {
+                    if (fetchDataType === "conversation") {
+                        console.log("FINISHED");
+                        if (document.querySelector(`meta[cai_converExtId="${converExtId}"]`)) {
+                            document.querySelector(`meta[cai_converExtId="${converExtId}"]`)
+                                .setAttribute('cai_conversation', JSON.stringify(chatData.turns));
+                        }
+                        else {
+                            const meta = document.createElement('meta');
+                            meta.setAttribute('cai_converExtId', converExtId);
+                            meta.setAttribute('cai_conversation', JSON.stringify(chatData.turns));
+                            document.head.appendChild(meta);
+                        }
+                        handleProgressInfoMeta(`(Ready!)`);
+                    }
+                    else if (fetchDataType === "history") {
+                        chatData.histories2.push(chatData.turns);
+                        chatData.turns = [];
+                    }
 
-        if (jsonData != null && AccessToken != null) {
-            const chatsLength = jsonData.histories.length;
-            for (const chat of jsonData.histories) {
+                    return;
+                    //If null, stops function and prevents calling function more
+                    //This means the fetching is finished
+                }
+
+                chatData.turns = [...chatData.turns, ...data.turns];
+
+                await fetchMessagesChat2({
+                    AccessToken: AccessToken,
+                    nextToken: data.meta.next_token,
+                    converExtId: converExtId,
+                    chatData: chatData,
+                    fetchDataType: fetchDataType
+                });
+            })
+            .catch(async (err) => {
+                console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
+                await new Promise(resolve => setTimeout(resolve, 10000));
+                return await fetchMessagesChat2({
+                    AccessToken: AccessToken,
+                    nextToken: nextToken,
+                    converExtId: converExtId,
+                    chatData: chatData,
+                    fetchDataType: fetchDataType
+                });
+            });
+    }
+
+    const fetchHistory = async (charId) => {
+        const metaChar = document.querySelector('meta[cai_charid="' + charId + '"]');
+        if (metaChar == null) {
+            return;
+        }
+        createFetchStartedMeta("true");
+        const AccessToken = getAccessToken();
+        if (metaChar.getAttribute('cai_temphistory2') != null && AccessToken != null) {
+            const tempHistoryData = JSON.parse(metaChar.getAttribute('cai_temphistory2'));
+            const chatsLength = tempHistoryData.chats.length;
+            let fetchedChatNumber = 1;
+            const chatData = { histories2: [], turns: [] }
+            for (const chat of tempHistoryData.chats) {
+                await fetchMessagesChat2({
+                    AccessToken: AccessToken,
+                    nextToken: null,
+                    converExtId: chat.chat_id,
+                    chatData: chatData,
+                    fetchDataType: "history"
+                });
+                fetchedChatNumber++;
+                handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${chatsLength} completed)`);
+            }
+            console.log("FINISHED");
+
+            if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
+                document.querySelector('meta[cai_charid="' + charId + '"]')
+                    .setAttribute('cai_history', JSON.stringify(chatData));
+            }
+            else {
+                const meta = document.createElement('meta');
+                meta.setAttribute('cai_charid', charId);
+                meta.setAttribute('cai_history', JSON.stringify(chatData));
+                document.head.appendChild(meta);
+            }
+            handleProgressInfoMeta(`(Ready!)`);
+        }
+        else if (metaChar.getAttribute('cai_temphistory') != null && AccessToken != null) {
+            const tempHistoryData = JSON.parse(metaChar.getAttribute('cai_temphistory'));
+
+            const chatsLength = tempHistoryData.histories.length;
+            for (const chat of tempHistoryData.histories) {
                 chat.msgs = [];
                 const chatExternalId = chat.external_id;
                 await fetchMessages({
@@ -230,38 +325,52 @@
                     converList: null
                 });
             }
-            console.log(jsonData);
+            console.log(tempHistoryData);
             console.log("FINISHED");
             if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
                 document.querySelector('meta[cai_charid="' + charId + '"]')
-                    .setAttribute('cai_history', JSON.stringify(jsonData));
+                    .setAttribute('cai_history', JSON.stringify(tempHistoryData));
             }
             else {
                 const meta = document.createElement('meta');
                 meta.setAttribute('cai_charid', charId);
-                meta.setAttribute('cai_history', JSON.stringify(jsonData));
+                meta.setAttribute('cai_history', JSON.stringify(tempHistoryData));
                 document.head.appendChild(meta);
             }
             handleProgressInfoMeta(`(Ready!)`);
-        } else {
+        }
+        else {
             createFetchStartedMeta("false");
             alert("Failed to get history.");
+            return;
         }
     };
 
-    const fetchConversation = async (converExtId) => {
+    const fetchConversation = async (converExtId, pageType) => {
         createFetchStartedMeta_Conversation("true", converExtId);
         const AccessToken = getAccessToken();
-        let converList = [];
-        await fetchMessages({
-            fetchDataType: "conversation",
-            nextPage: 0,
-            AccessToken: AccessToken,
-            chatExternalId: converExtId,
-            chat: null,
-            chatsLength: null,
-            converList: converList
-        });
+        if (pageType === "chat") {
+            let converList = [];
+            await fetchMessages({
+                fetchDataType: "conversation",
+                nextPage: 0,
+                AccessToken: AccessToken,
+                chatExternalId: converExtId,
+                chat: null,
+                chatsLength: null,
+                converList: converList
+            });
+        }
+        else if (pageType === "chat2") {
+            const chatData = { turns: [] }
+            await fetchMessagesChat2({
+                AccessToken: AccessToken,
+                nextToken: null,
+                converExtId: converExtId,
+                chatData: chatData,
+                fetchDataType: "conversation"
+            });
+        }
     }
 
     // FETCH END
@@ -279,22 +388,18 @@
                 }
             }, 1000);
         }
-        else if (window.location.href.includes("character.ai/chat2")) {
-            const intervalId = setInterval(() => {
-                let container = document.querySelector('.apppage');
-                if (container != null) {
-                    clearInterval(intervalId);
-                    create_options_DOM_Conversation(container, "chat2");
-                }
-            }, 1000);
-        }
         else if (window.location.href.includes("character.ai/chat")) {
             const intervalId = setInterval(() => {
                 let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
                 let container = document.querySelector('.apppage');
                 if (container != null && currentConverExtIdMeta != null) {
                     clearInterval(intervalId);
-                    create_options_DOM_Conversation(container, "chat");
+                    if (window.location.href.includes("character.ai/chat2")) {
+                        create_options_DOM_Conversation(container, "chat2");
+                    }
+                    else {
+                        create_options_DOM_Conversation(container, "chat");
+                    }
                 }
             }, 1000);
         }
@@ -347,22 +452,39 @@
         container.appendChild(parseHTML_caiTools(cai_tools_string));
 
         //open modal upon click on btn
-        const currentConverExtId = document.querySelector('meta[cai_currentConverExtId]')?.getAttribute('cai_currentConverExtId');
-        const checkExistingConver = pageType === "chat"
-            ? document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`)
-            : 1;
         container.querySelector('.cai_tools-btn').addEventListener('mouseup', clickOnBtn);
         container.querySelector('.cai_tools-btn').addEventListener('touchstart', clickOnBtn);
 
         function clickOnBtn() {
             container.querySelector('.cai_tools-cont').classList.add('active');
 
-            if (pageType === "chat") {
-                const fetchStarted = document.querySelector(`meta[cai_fetchStarted_conver][cai_fetchStatusExtId="${currentConverExtId}"]`)
-                    ?.getAttribute('cai_fetchStarted_conver');
-                if ((checkExistingConver == null || checkExistingConver.getAttribute('cai_conversation') == null) && fetchStarted !== "true") {
-                    fetchConversation(currentConverExtId);
+            let currentConverExtId = getCurrentConverId();
+            const checkExistingConver = document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`);
+
+            const converStatusInterval = setInterval(() => {
+                if (checkExistingConver != null && checkExistingConver.getAttribute('cai_conversation') != null) {
+                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
+                    clearInterval(converStatusInterval);
+                    return;
                 }
+                const converStatus = document.querySelector(`meta[cait_progressInfo]`);
+                if (converStatus != null) {
+                    const converStatusText = converStatus.getAttribute('cait_progressInfo');
+                    try {
+                        container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = converStatusText;
+                    } catch (error) {
+                        clearInterval(converStatusInterval);
+                    }
+                    if (converStatusText === '(Ready!)') {
+                        clearInterval(converStatusInterval);
+                    }
+                }
+            }, 1000);
+
+            const fetchStarted = document.querySelector(`meta[cai_fetchStarted_conver][cai_fetchStatusExtId="${currentConverExtId}"]`)
+                ?.getAttribute('cai_fetchStarted_conver');
+            if ((checkExistingConver?.getAttribute('cai_conversation') == null) && fetchStarted !== "true") {
+                fetchConversation(currentConverExtId, pageType);
             }
         }
 
@@ -379,28 +501,6 @@
                 close_caitSettingsModal(container);
             }
         });
-
-        if (pageType === "chat") {
-            const converStatusInterval = setInterval(() => {
-                if (checkExistingConver != null && checkExistingConver.getAttribute('cai_conversation') != null) {
-                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
-                    clearInterval(converStatusInterval);
-                    return;
-                }
-                const converStatus = document.querySelector(`meta[cai_progressinfo]`);
-                if (converStatus != null) {
-                    const converStatusText = converStatus.getAttribute('cai_progressinfo');
-                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = converStatusText;
-                    if (converStatusText === '(Ready!)') {
-                        clearInterval(converStatusInterval);
-                    }
-                }
-            }, 1000);
-        }
-        else {
-            container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
-        }
-
 
         container.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_hybrid' };
@@ -419,17 +519,17 @@
         });
 
         container.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'oobabooga', pageType: pageType };
+            const args = { downloadType: 'oobabooga', pageType: pageType };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
         container.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'tavern', pageType: pageType };
+            const args = { downloadType: 'tavern', pageType: pageType };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
         container.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
-            const args = { extId: currentConverExtId, downloadType: 'example_chat', pageType: pageType };
+            const args = { downloadType: 'example_chat', pageType: pageType };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
@@ -453,14 +553,12 @@
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
                     </div>
                     <div class="cait-body">
-                        <span class="cait_warning" style="display: block;">"chat2" conversations in here are currently inaccessible.</span>
+                        <span class="cait_warning"></span>
                         <h6>History</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
                             <li data-cait_type='cai_offline_read'>Download to read offline</li>
                             <li data-cait_type='example_chat'>Download as example chat (txt)</li>
-                            <li data-cait_type='cai_dump'>Raw Dump (json)</li>
-                            <li data-cait_type='cai_dump_anon'>Raw Dump (anonymous)</li>
                             <li data-cait_type='cai_tavern_history'>Tavern Chats (zip/jsonl)</li>
                         </ul>
                     </div>
@@ -470,7 +568,9 @@
         /*
             <h6>Misc</h6>
             <ul>
-                <li data-cait_type=''>)</li>
+                <li data-cait_type=''></li>
+                <li data-cait_type='cai_dump'>Raw Dump (json)</li>
+                <li data-cait_type='cai_dump_anon'>Raw Dump (anonymous)</li>
             </ul>
         */
         container.appendChild(parseHTML_caiTools(cai_tools_string));
@@ -505,9 +605,9 @@
                 clearInterval(histStatusInterval);
                 return;
             }
-            const histStatus = document.querySelector(`meta[cai_progressinfo]`);
+            const histStatus = document.querySelector(`meta[cait_progressInfo]`);
             if (histStatus != null) {
-                const histStatusText = histStatus.getAttribute('cai_progressinfo');
+                const histStatusText = histStatus.getAttribute('cait_progressInfo');
                 container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
                 if (histStatusText === '(Ready!)') {
                     clearInterval(histStatusInterval);
@@ -526,7 +626,7 @@
             DownloadHistory(args);
             close_caiToolsModal(container);
         });
-        container.querySelector('.cai_tools-cont [data-cait_type="cai_dump"]').addEventListener('click', () => {
+        /*container.querySelector('.cai_tools-cont [data-cait_type="cai_dump"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_dump' };
             DownloadHistory(args);
             close_caiToolsModal(container);
@@ -535,7 +635,7 @@
             const args = { downloadType: 'cai_dump_anon' };
             DownloadHistory(args);
             close_caiToolsModal(container);
-        });
+        });*/
         container.querySelector('.cai_tools-cont [data-cait_type="cai_tavern_history"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_tavern_history' };
             DownloadHistory(args);
@@ -559,11 +659,9 @@
     // CONVERSATION
     function DownloadConversation(args) {
         const pageType = args.pageType;
-        const chatData = pageType === "chat"
-            ? document.querySelector(`meta[cai_converExtId="${args.extId}"]`)?.getAttribute('cai_conversation') != null
-                ? JSON.parse(document.querySelector(`meta[cai_converExtId="${args.extId}"]`).getAttribute('cai_conversation'))
-                : null
-            : JSON.parse(document.querySelector('meta[cai_currentChat2]').getAttribute('cai_currentChat2'));
+        const chatData = document.querySelector(`meta[cai_converExtId="${getCurrentConverId()}"]`)?.getAttribute('cai_conversation') != null
+            ? JSON.parse(document.querySelector(`meta[cai_converExtId="${getCurrentConverId()}"]`).getAttribute('cai_conversation'))
+            : null;
 
         if (chatData == null) {
             alert("Data doesn't exist or not ready. Try again later.")
@@ -574,7 +672,7 @@
 
         let charName = pageType === "chat"
             ? chatData[0].src__name
-            : chatData.turns[chatData.turns.length - 1].author.name;
+            : chatData[chatData.length - 1].author.name;
 
         switch (args.downloadType) {
             case "oobabooga":
@@ -614,7 +712,7 @@
                 });
         }
         else if (args.pageType === "chat2") {
-            const turns = chatData.turns.reverse();
+            const turns = chatData.reverse();
             turns.shift();
             turns.forEach((msg, index) => {
                 if (index % 2 == 0) {
@@ -663,7 +761,7 @@
                 });
         }
         else if (args.pageType === "chat2") {
-            const turns = chatData.turns.reverse();
+            const turns = chatData.reverse();
             turns.forEach(msg => {
                 const user = msg.author.is_human ? "user" : "char";
                 const message = `{{${user}}}: ${msg.candidates[msg.candidates.length - 1].raw_content}`;
@@ -707,7 +805,7 @@
             });
         }
         else {
-            const turns = chatData.turns.reverse();
+            const turns = chatData.reverse();
             turns.shift();
             turns.forEach((msg, index) => {
                 let currentUser = index % 2 == 0
@@ -742,21 +840,24 @@
             ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_info'))
             : null;
 
-        if (historyData == null || historyData.histories.length < 1 || charInfo == null) {
-            alert("Data is empty or not ready. Try again later.")
+        if (historyData == null || charInfo == null) {
+            alert("Data doesn't exist or not ready. Try again later.")
             return;
         }
 
-        const character_name = historyData.histories.reverse()
-            .flatMap(obj => obj.msgs.filter(msg => msg.src != null && msg.src.is_human === false && msg.src.name != null))
-            .find(msg => msg.src.name !== null)?.src.name ?? null;
+        const character_name = historyData.histories2 != null
+            ? historyData.histories2[0][historyData.histories2[0].length - 1].author.name
+            : historyData.histories.reverse()
+                .flatMap(obj => obj.msgs.filter(msg => msg.src != null && msg.src.is_human === false && msg.src.name != null))
+                .find(msg => msg.src.name !== null)?.src.name ?? null;
 
+        const isChat2History = historyData.histories2 ? true : false;
         const dtype = args.downloadType;
         switch (dtype) {
             case "cai_offline_read":
-                DownloadHistory_OfflineReading(historyData, character_name);
+                DownloadHistory_OfflineReading(historyData, character_name, isChat2History);
                 break;
-            case "cai_dump":
+            /*case "cai_dump":
                 DownloadHistory_AsDump(historyData, charInfo, dtype, character_name);
                 break;
             case "cai_dump_anon":
@@ -770,37 +871,52 @@
                         window.sessionStorage.setItem('askToFeedModel', 'false');
                     }
                 }
-                break;
+                break;*/
             case "example_chat":
-                DownloadHistory_ExampleChat(historyData, character_name);
+                DownloadHistory_ExampleChat(historyData, character_name, isChat2History);
                 break;
             case "cai_tavern_history":
-                DownloadHistory_TavernHistory(historyData, character_name);
+                DownloadHistory_TavernHistory(historyData, character_name, isChat2History);
                 break;
             default:
                 break;
         }
     }
 
-    function DownloadHistory_OfflineReading(historyData, character_name) {
-        const histories = historyData.histories;
-
+    function DownloadHistory_OfflineReading(historyData, character_name, isChat2History) {
         let offlineHistory = [];
 
         let i = 1;
-        histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
-            let messages = [];
 
-            obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
-                .forEach(msg => {
+        if (isChat2History) {
+            historyData.histories2.filter(v => v.length > 1).forEach(obj => {
+                let messages = [];
+                obj.reverse();
+                obj.forEach(msg => {
                     messages.push({
-                        messager: msg.src.name,
-                        text: encodeURIComponent(msg.text)
+                        messager: msg.author.name,
+                        text: encodeURIComponent(msg.candidates[msg.candidates.length - 1].raw_content)
                     });
                 });
-            offlineHistory.push({ id: i, messages: messages });
-            i++;
-        });
+                offlineHistory.push({ id: i, messages: messages });
+                i++;
+            });
+        }
+        else {
+            historyData.histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
+                let messages = [];
+
+                obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
+                    .forEach(msg => {
+                        messages.push({
+                            messager: msg.src.name,
+                            text: encodeURIComponent(msg.text)
+                        });
+                    });
+                offlineHistory.push({ id: i, messages: messages });
+                i++;
+            });
+        }
 
         var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
@@ -881,18 +997,32 @@
         link.click();
     }
 
-    function DownloadHistory_ExampleChat(historyData, character_name) {
-        const histories = historyData.histories.reverse();
+    function DownloadHistory_ExampleChat(historyData, character_name, isChat2History) {
         const messageList = [];
-        histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
-            messageList.push("<START>");
-            obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
-                .forEach(msg => {
-                    const user = msg.src.is_human ? "user" : "char";
-                    const message = `{{${user}}}: ${msg.text}`;
+
+        if (isChat2History) {
+            historyData.histories2.filter(v => v.length > 1).forEach(obj => {
+                messageList.push("<START>");
+                obj.reverse();
+                obj.forEach(msg => {
+                    const user = msg.author.is_human ? "user" : "char";
+                    const message = `{{${user}}}: ${msg.candidates[msg.candidates.length - 1].raw_content}`;
                     messageList.push(message);
                 });
-        });
+            });
+        }
+        else {
+            historyData.histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
+                messageList.push("<START>");
+                obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
+                    .forEach(msg => {
+                        const user = msg.src.is_human ? "user" : "char";
+                        const message = `{{${user}}}: ${msg.text}`;
+                        messageList.push(message);
+                    });
+            });
+        }
+
         const messageString = messageList.join("\n");
 
         const blob = new Blob([messageString], { type: 'text/plain' });
@@ -906,16 +1036,22 @@
     }
 
 
-    function DownloadHistory_TavernHistory(historyData, character_name) {
-        const histories = historyData.histories.reverse();
+    function DownloadHistory_TavernHistory(historyData, character_name, isChat2History) {
+        const histories = isChat2History ? historyData.histories2 : historyData.histories;
         const char_id = getCharId();
         const zip = new JSZip();
-
         let count = 0;
-        const filePromises = histories.filter(v => v.msgs != null && v.msgs.length > 1).map(async (chat, index) => {
+
+        const filePromises = histories.filter(v => {
+            if (isChat2History) {
+                return v.length > 1;
+            } else {
+                return v.msgs != null && v.msgs.length > 1;
+            }
+        }).map(async (chat, index) => {
             count = index + 1;
-            const charName = chat.msgs[0].display_name ?? chat.msgs[0].src.name;
-            const blob = CreateTavernChatBlob(chat.msgs, { pageType: "chat" }, charName);
+            const chatMessages = isChat2History ? chat : chat.msgs;
+            const blob = CreateTavernChatBlob(chatMessages, { pageType: isChat2History ? "chat2" : "chat" }, character_name);
             const arraybuffer = await readAsBinaryString(blob);
             zip.file(`chat_${index + 1}.jsonl`, arraybuffer, { binary: true });
         });
@@ -1180,6 +1316,10 @@
 
     function getAccessToken() {
         return document.querySelector('meta[cai_token]').getAttribute('cai_token');
+    }
+
+    function getCurrentConverId() {
+        return document.querySelector(`meta[cai_currentConverExtId]`)?.getAttribute('cai_currentConverExtId');
     }
 
     function parseHTML_caiTools(html) {

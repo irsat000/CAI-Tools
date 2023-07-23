@@ -608,7 +608,11 @@
             const histStatus = document.querySelector(`meta[cait_progressInfo]`);
             if (histStatus != null) {
                 const histStatusText = histStatus.getAttribute('cait_progressInfo');
-                container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
+                try {
+                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
+                } catch (error) {
+                    clearInterval(histStatusInterval);
+                }
                 if (histStatusText === '(Ready!)') {
                     clearInterval(histStatusInterval);
                 }

@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.6.0";
+    const extVersion = "1.6.1";
 
     const metadata = {
         version: 1,
@@ -194,7 +194,7 @@
                 }
             })
             .catch(async (err) => {
-                console.log("Likely rate limitting error. Will continue after 10 seconds.");
+                console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
                 await new Promise(resolve => setTimeout(resolve, 10000));
                 return await fetchMessages({
                     fetchDataType: fetchDataType,
@@ -208,14 +208,104 @@
             });
     };
 
-    const fetchHistory = async (charId) => {
-        createFetchStartedMeta("true");
-        const jsonData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_temphistory') != null
-            ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_temphistory'))
-            : null;
-        const AccessToken = getAccessToken();
+    const fetchMessagesChat2 = async ({ AccessToken, nextToken, converExtId, chatTurns }) => {
+        //Will be similar to fetchMessages. Next token will come from the previous fetch.
+        //Last chat will give next token too.
+        //New fetch will repond with null next_token and empty turns.
+        await new Promise(resolve => setTimeout(resolve, 200));
+        let url = `https://neo.character.ai/turns/${converExtId}/`;
+        await fetch(url + (nextToken ? `?next_token=${nextToken}` : ""), {
+            "method": "GET",
+            "headers": {
+                "authorization": AccessToken,
+            }
+        })
+            .then((res) => res.json())
+            .then(async (data) => {
+                if (data.meta.next_token == null) {
+                    console.log("FINISHED");
+                    if (document.querySelector(`meta[cai_converExtId="${converExtId}"]`)) {
+                        document.querySelector(`meta[cai_converExtId="${converExtId}"]`)
+                            .setAttribute('cai_conversation', JSON.stringify(chatTurns));
+                    }
+                    else {
+                        const meta = document.createElement('meta');
+                        meta.setAttribute('cai_converExtId', converExtId);
+                        meta.setAttribute('cai_conversation', JSON.stringify(chatTurns));
+                        document.head.appendChild(meta);
+                    }
+                    handleProgressInfoMeta(`(Ready!)`);
 
-        if (jsonData != null && AccessToken != null) {
+                    return;
+                    //If null, stops function and prevents calling function more
+                    //This means the fetching is finished
+                }
+
+                chatTurns = [...chatTurns, ...data.turns];
+
+                await fetchMessagesChat2({
+                    AccessToken: AccessToken,
+                    nextToken: data.meta.next_token,
+                    converExtId: converExtId,
+                    chatTurns: chatTurns
+                });
+            })
+            .catch(async (err) => {
+                console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
+                await new Promise(resolve => setTimeout(resolve, 10000));
+                return await fetchMessagesChat2({
+                    AccessToken: AccessToken,
+                    nextToken: nextToken,
+                    converExtId: converExtId,
+                    chatTurns: chatTurns
+                });
+            });
+    }
+
+    const fetchHistory = async (charId) => {
+        const metaChar = document.querySelector('meta[cai_charid="' + charId + '"]');
+        if (metaChar == null) {
+            return;
+        }
+        createFetchStartedMeta("true");
+        const AccessToken = getAccessToken();
+        if (metaChar.getAttribute('cai_temphistory2') != null && AccessToken != null) {
+            const jsonData = JSON.parse(metaChar.getAttribute('cai_temphistory2'));
+            let jsonHistory = [];
+
+            const chatsLength = jsonData.chats.length;
+            let fetchedChatNumber = 1;
+            for (const chat of jsonData.chats) {
+                await fetch(`https://neo.character.ai/turns/${chat.chat_id}/`, {
+                    "method": "GET",
+                    "headers": {
+                        "authorization": AccessToken
+                    }
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        jsonHistory.push(data);
+                        fetchedChatNumber++;
+                        handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${chatsLength} completed)`);
+                    });
+            }
+            console.log(jsonHistory);
+            console.log("FINISHED");
+            if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
+                document.querySelector('meta[cai_charid="' + charId + '"]')
+                    .setAttribute('cai_history', JSON.stringify(jsonHistory));
+            }
+            else {
+                const meta = document.createElement('meta');
+                meta.setAttribute('cai_charid', charId);
+                meta.setAttribute('cai_history', JSON.stringify(jsonHistory));
+                document.head.appendChild(meta);
+            }
+            handleProgressInfoMeta(`(Ready!)`);
+        }
+        else if (metaChar.getAttribute('cai_temphistory') != null && AccessToken != null) {
+            const jsonData = JSON.parse(metaChar.getAttribute('cai_temphistory'));
+
             const chatsLength = jsonData.histories.length;
             for (const chat of jsonData.histories) {
                 chat.msgs = [];
@@ -243,25 +333,38 @@
                 document.head.appendChild(meta);
             }
             handleProgressInfoMeta(`(Ready!)`);
-        } else {
+        }
+        else {
             createFetchStartedMeta("false");
             alert("Failed to get history.");
+            return;
         }
     };
 
-    const fetchConversation = async (converExtId) => {
+    const fetchConversation = async (converExtId, pageType) => {
         createFetchStartedMeta_Conversation("true", converExtId);
         const AccessToken = getAccessToken();
-        let converList = [];
-        await fetchMessages({
-            fetchDataType: "conversation",
-            nextPage: 0,
-            AccessToken: AccessToken,
-            chatExternalId: converExtId,
-            chat: null,
-            chatsLength: null,
-            converList: converList
-        });
+        if (pageType === "chat") {
+            let converList = [];
+            await fetchMessages({
+                fetchDataType: "conversation",
+                nextPage: 0,
+                AccessToken: AccessToken,
+                chatExternalId: converExtId,
+                chat: null,
+                chatsLength: null,
+                converList: converList
+            });
+        }
+        else if (pageType === "chat2") {
+            let chatTurns = [];
+            await fetchMessagesChat2({
+                AccessToken: AccessToken,
+                nextToken: null,
+                converExtId: converExtId,
+                chatTurns: chatTurns
+            });
+        }
     }
 
     // FETCH END
@@ -279,22 +382,18 @@
                 }
             }, 1000);
         }
-        else if (window.location.href.includes("character.ai/chat2")) {
-            const intervalId = setInterval(() => {
-                let container = document.querySelector('.apppage');
-                if (container != null) {
-                    clearInterval(intervalId);
-                    create_options_DOM_Conversation(container, "chat2");
-                }
-            }, 1000);
-        }
         else if (window.location.href.includes("character.ai/chat")) {
             const intervalId = setInterval(() => {
                 let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
                 let container = document.querySelector('.apppage');
                 if (container != null && currentConverExtIdMeta != null) {
                     clearInterval(intervalId);
-                    create_options_DOM_Conversation(container, "chat");
+                    if (window.location.href.includes("character.ai/chat2")) {
+                        create_options_DOM_Conversation(container, "chat2");
+                    }
+                    else {
+                        create_options_DOM_Conversation(container, "chat");
+                    }
                 }
             }, 1000);
         }
@@ -348,21 +447,17 @@
 
         //open modal upon click on btn
         const currentConverExtId = document.querySelector('meta[cai_currentConverExtId]')?.getAttribute('cai_currentConverExtId');
-        const checkExistingConver = pageType === "chat"
-            ? document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`)
-            : 1;
+        const checkExistingConver = document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`);
         container.querySelector('.cai_tools-btn').addEventListener('mouseup', clickOnBtn);
         container.querySelector('.cai_tools-btn').addEventListener('touchstart', clickOnBtn);
 
         function clickOnBtn() {
             container.querySelector('.cai_tools-cont').classList.add('active');
 
-            if (pageType === "chat") {
-                const fetchStarted = document.querySelector(`meta[cai_fetchStarted_conver][cai_fetchStatusExtId="${currentConverExtId}"]`)
-                    ?.getAttribute('cai_fetchStarted_conver');
-                if ((checkExistingConver == null || checkExistingConver.getAttribute('cai_conversation') == null) && fetchStarted !== "true") {
-                    fetchConversation(currentConverExtId);
-                }
+            const fetchStarted = document.querySelector(`meta[cai_fetchStarted_conver][cai_fetchStatusExtId="${currentConverExtId}"]`)
+                ?.getAttribute('cai_fetchStarted_conver');
+            if ((checkExistingConver?.getAttribute('cai_conversation') == null) && fetchStarted !== "true") {
+                fetchConversation(currentConverExtId, pageType);
             }
         }
 
@@ -380,27 +475,21 @@
             }
         });
 
-        if (pageType === "chat") {
-            const converStatusInterval = setInterval(() => {
-                if (checkExistingConver != null && checkExistingConver.getAttribute('cai_conversation') != null) {
-                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
+        const converStatusInterval = setInterval(() => {
+            if (checkExistingConver != null && checkExistingConver.getAttribute('cai_conversation') != null) {
+                container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
+                clearInterval(converStatusInterval);
+                return;
+            }
+            const converStatus = document.querySelector(`meta[cai_progressinfo]`);
+            if (converStatus != null) {
+                const converStatusText = converStatus.getAttribute('cai_progressinfo');
+                container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = converStatusText;
+                if (converStatusText === '(Ready!)') {
                     clearInterval(converStatusInterval);
-                    return;
                 }
-                const converStatus = document.querySelector(`meta[cai_progressinfo]`);
-                if (converStatus != null) {
-                    const converStatusText = converStatus.getAttribute('cai_progressinfo');
-                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = converStatusText;
-                    if (converStatusText === '(Ready!)') {
-                        clearInterval(converStatusInterval);
-                    }
-                }
-            }, 1000);
-        }
-        else {
-            container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = '(Ready!)';
-        }
-
+            }
+        }, 1000);
 
         container.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_hybrid' };
@@ -559,11 +648,9 @@
     // CONVERSATION
     function DownloadConversation(args) {
         const pageType = args.pageType;
-        const chatData = pageType === "chat"
-            ? document.querySelector(`meta[cai_converExtId="${args.extId}"]`)?.getAttribute('cai_conversation') != null
-                ? JSON.parse(document.querySelector(`meta[cai_converExtId="${args.extId}"]`).getAttribute('cai_conversation'))
-                : null
-            : JSON.parse(document.querySelector('meta[cai_currentChat2]').getAttribute('cai_currentChat2'));
+        const chatData = document.querySelector(`meta[cai_converExtId="${args.extId}"]`)?.getAttribute('cai_conversation') != null
+            ? JSON.parse(document.querySelector(`meta[cai_converExtId="${args.extId}"]`).getAttribute('cai_conversation'))
+            : null;
 
         if (chatData == null) {
             alert("Data doesn't exist or not ready. Try again later.")
@@ -574,7 +661,7 @@
 
         let charName = pageType === "chat"
             ? chatData[0].src__name
-            : chatData.turns[chatData.turns.length - 1].author.name;
+            : chatData[chatData.length - 1].author.name;
 
         switch (args.downloadType) {
             case "oobabooga":
@@ -614,7 +701,7 @@
                 });
         }
         else if (args.pageType === "chat2") {
-            const turns = chatData.turns.reverse();
+            const turns = chatData.reverse();
             turns.shift();
             turns.forEach((msg, index) => {
                 if (index % 2 == 0) {
@@ -663,7 +750,7 @@
                 });
         }
         else if (args.pageType === "chat2") {
-            const turns = chatData.turns.reverse();
+            const turns = chatData.reverse();
             turns.forEach(msg => {
                 const user = msg.author.is_human ? "user" : "char";
                 const message = `{{${user}}}: ${msg.candidates[msg.candidates.length - 1].raw_content}`;
@@ -707,7 +794,7 @@
             });
         }
         else {
-            const turns = chatData.turns.reverse();
+            const turns = chatData.reverse();
             turns.shift();
             turns.forEach((msg, index) => {
                 let currentUser = index % 2 == 0

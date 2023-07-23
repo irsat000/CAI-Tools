@@ -16,7 +16,9 @@ Some of the features will be available after some time has passed.
 # News
 Character AI developers are constantly updating the website. This comes with many new issues for this extension and I would like to have your Github issues or emails for reporting.
 
-Last update introduced a new chat page, you will see "character.ai/chat2" path on the address. Version 1.6.0 and above will fix that issue.
+Last update introduced a new chat page, you will see "character.ai/chat2" path on the address. Version 1.6.0 and above fixed that issue.
+
+When you go to a "chat2" character second time, extension might not register and try to download the conversations of previous character you visited. Refreshing solves this issue.
 # Feature List
 ### Conversation Page
 ###### Download Character (json)
@@ -33,7 +35,6 @@ It downloads the conversation in Tavern chat format. You can continue the conver
 This turns the conversation into example chat/definition format so you can use it in CAI and other AI chat platforms. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
 
 ### History Page
-Only in histories, "chat2" conversations are currently inaccessible by this tool. Wish me luck!
 ###### Download to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.
 ###### Raw Dump (json)

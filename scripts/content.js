@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.6.1";
+    const extVersion = "1.6.2";
 
     const metadata = {
         version: 1,
@@ -810,7 +810,6 @@
         }
         else {
             const turns = chatData.reverse();
-            turns.shift();
             turns.forEach((msg, index) => {
                 let currentUser = index % 2 == 0
                     ? charName

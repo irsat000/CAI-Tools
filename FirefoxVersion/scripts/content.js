@@ -2,8 +2,8 @@
 
 (() => {
     // These values must be updated when required
-    const extAPI = browser; // chrome / browser
-    const extVersion = "1.6.1";
+    const extAPI = chrome; // chrome / browser
+    const extVersion = "1.6.2";
 
     const metadata = {
         version: 1,
@@ -608,7 +608,11 @@
             const histStatus = document.querySelector(`meta[cait_progressInfo]`);
             if (histStatus != null) {
                 const histStatusText = histStatus.getAttribute('cait_progressInfo');
-                container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
+                try {
+                    container.querySelector('.cai_tools-cont .cait_progressInfo').textContent = histStatusText;
+                } catch (error) {
+                    clearInterval(histStatusInterval);
+                }
                 if (histStatusText === '(Ready!)') {
                     clearInterval(histStatusInterval);
                 }
@@ -806,7 +810,6 @@
         }
         else {
             const turns = chatData.reverse();
-            turns.shift();
             turns.forEach((msg, index) => {
                 let currentUser = index % 2 == 0
                     ? charName

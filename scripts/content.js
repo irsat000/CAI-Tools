@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.6.2";
+    const extVersion = "1.6.3";
 
     const metadata = {
         version: 1,
@@ -1322,7 +1322,7 @@
     }
 
     function getCurrentConverId() {
-        return document.querySelector(`meta[cai_currentConverExtId]`)?.getAttribute('cai_currentConverExtId');
+        return document.querySelector(`meta[cai_charid="${getCharId()}"][cai_currentConverExtId]`)?.getAttribute('cai_currentConverExtId');
     }
 
     function parseHTML_caiTools(html) {

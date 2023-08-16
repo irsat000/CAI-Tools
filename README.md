@@ -6,6 +6,8 @@ Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkh
 
 Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
 
+Note: Mobile phone users can use Kiwi browser and download the extension from Chrome Store.
+
 # How to
 For conversation and character data, navigate to a conversation pages. You can choose any conversation from histories page.
 For history data, navigate to "View Chat Histories".
@@ -37,9 +39,9 @@ This turns the conversation into example chat/definition format so you can use i
 ### History Page
 ###### Download to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.
-###### Raw Dump (json)
+###### Raw Dump (json) [DEPRECATED]
 It downloads the entire chat history and includes your character settings. You can use these two options to train models.
-###### Raw Dump (anonymous)
+###### Raw Dump (anonymous) [DEPRECATED]
 This is a better option if you want to hide your first name, username, display name etc.
 ###### Download as example chat
 This turns all your history into example chat/definition format so you can use them in CAI and other AI chat platforms. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
@@ -57,3 +59,9 @@ You can download this file individually. This can convert your existing .json ch
 
 # Screenshot
 ![Preview](https://github.com/irsat000/CAI-Tools/assets/38238671/ff724f87-abb1-4d47-86a8-409d13cdea67)
+
+# Contributors
+See the list of [contributors.](AUTHORS)
+
+# License
+This project is licensed under the GNU GENERAL PUBLIC LICENSE - see the [LICENSE](LICENSE) file for details.

@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.6.3";
+    const extVersion = "1.6.4";
 
     const metadata = {
         version: 1,
@@ -1266,8 +1266,19 @@
 
                         for (let prop in data.character) {
                             if (data.character.hasOwnProperty(prop)) {
-                                const line = `<span class="cait_jv_prop">${prop}:</span> ${data.character[prop]}\r\n`;
-                                viewerPre.innerHTML += line.replace(/\r/g, '&#13;').replace(/\n/g, '&#10;');
+                                if (prop === "categories" && data.character["categories"]) {
+                                    const cates = data.character["categories"];
+                                    let line = `<span class="cait_jv_prop">categories:</span> `;
+                                    for (let i = 0; i < cates.length; i++) {
+                                        line += cates[i].description + " - ";
+                                    }
+                                    line += "\r\n";
+                                    viewerPre.innerHTML += line.replace(/\r/g, '&#13;').replace(/\n/g, '&#10;');
+                                }
+                                else {
+                                    const line = `<span class="cait_jv_prop">${prop}:</span> ${data.character[prop]}\r\n`;
+                                    viewerPre.innerHTML += line.replace(/\r/g, '&#13;').replace(/\n/g, '&#10;');
+                                }
                                 viewerPre.innerHTML += "<br />";
                             }
                         }

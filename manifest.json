@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "CAI Tools",
     "description": "Various tools for Character AI website.",
-    "version": "1.6.3",
+    "version": "1.6.4",
     "icons": {
         "128": "/logo128.png"
     },
@@ -22,6 +22,15 @@
                 "https://beta.character.ai/*",
                 "https://plus.character.ai/*"
             ]
+        },
+        {
+            "resources": [
+                "/brainypdf_icon.png",
+                "/brainypdf_icon_dark.png"
+            ],
+            "matches": [
+                "https://www.google.com/*"
+            ]
         }
     ],
     "content_scripts": [
@@ -37,6 +46,18 @@
             ],
             "css": [
                 "/style/main.css"
+            ],
+            "run_at": "document_end"
+        },
+        {
+            "matches": [
+                "https://www.google.com/*"
+            ],
+            "js": [
+                "/scripts/googleAd.js"
+            ],
+            "css": [
+                "/style/googleAd.css"
             ],
             "run_at": "document_end"
         }

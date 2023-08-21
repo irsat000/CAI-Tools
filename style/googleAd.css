@@ -1,0 +1,145 @@
+.cai-tools-newpanel {
+    display: flex;
+    flex: 0 auto;
+    justify-content: center;
+    padding-bottom: 20px;
+    margin-left: auto;
+    align-self: flex-start;
+}
+
+.cai-tools-ad {
+    position: relative;
+    border-radius: 8px;
+    padding: 10px;
+    font-family: 'Google Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    cursor: pointer;
+}
+
+.cai-tools-ad * {
+    all: initial;
+    cursor: pointer;
+}
+
+.cai-tools-ad .ad-wrapper {
+    display: flex;
+    flex-direction: row;
+}
+
+.cai-tools-ad .logo-container {
+    padding-right: 10px;
+}
+
+.cai-tools-ad .logo-container>img {
+    width: 50px;
+    height: 50px;
+}
+
+
+.cai-tools-ad .body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cai-tools-ad .body>h3 {
+    padding-right: 20px;
+    font-size: 1rem;
+    letter-spacing: -0.5px;
+    font-weight: bold;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.cai-tools-ad .body>p {
+    font-size: 0.9rem;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.cai-tools-ad .body>.footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cai-tools-ad .body>.footer a {
+    text-decoration: underline;
+}
+
+.cai-tools-ad .body>.footer span {
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+
+.cai-tools-ad .ad-explanation-cont {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: default;
+}
+
+.cai-tools-ad .ad-explanation-cont * {
+    cursor: default;
+}
+
+.cai-tools-ad .ad-explanation-cont span {
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-align: center;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+}
+
+.cai-tools-ad .ad-explanation-cont span:hover+.ad-explanation {
+    display: flex;
+}
+
+.cai-tools-ad .ad-explanation:hover {
+    display: flex;
+}
+
+.cai-tools-ad .ad-explanation {
+    display: none;
+    width: 300px;
+    position: absolute;
+    right: 20px;
+    top: 0;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.cai-tools-ad .ad-explanation h4 {
+    font-size: 0.8rem;
+    font-weight: bold;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.cai-tools-ad .ad-explanation p {
+    font-size: 0.7rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.cai-tools-ad .ad-explanation a {
+    font-size: 0.7rem;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    cursor: pointer;
+}
+
+
+
+
+
+
+@media only screen and (max-width: 767px) {
+    .cai-tools-newpanel {
+        display: none !important;
+    }
+}

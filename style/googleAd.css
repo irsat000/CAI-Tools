@@ -63,11 +63,15 @@
 
 .cai-tools-ad .body>.footer a {
     text-decoration: underline;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.9rem;
 }
 
 .cai-tools-ad .body>.footer span {
     padding: 2px 4px;
     border-radius: 4px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.9rem;
 }
 
 

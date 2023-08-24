@@ -4,7 +4,7 @@
 
     if (window.location.href.includes("https://www.google.com/search")) {
         window.addEventListener('load', function () {
-            initialize()
+            //initialize()
         });
     }
 
@@ -50,7 +50,7 @@
                         Join millions of students, researchers and professionals answering their questions about their documents with AI
                     </p>
                     <div class="footer">
-                        <a href="#">Try it for free!</a>
+                        <a>Try it for free!</a>
                         <span>#3 on Product Hunt</span>
                     </div>
                 </div>

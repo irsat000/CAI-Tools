@@ -6,6 +6,8 @@ Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkh
 
 Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
 
+Patreon for donation: https://www.patreon.com/Irsat
+
 Note: Mobile phone users can use Kiwi browser and download the extension from Chrome Store.
 
 # How to
@@ -16,11 +18,8 @@ Click on CAI Tools button on top right corner to open the menu. You will see all
 
 Some of the features will be available after some time has passed.
 # News
-Character AI developers are constantly updating the website. This comes with many new issues for this extension and I would like to have your Github issues or emails for reporting.
+Character AI developers are constantly updating the website. This comes with many new issues for this extension and I would like to have your new Github issues or emails for reporting. Feature requests are also welcome.
 
-Last update introduced a new chat page, you will see "character.ai/chat2" path on the address. Version 1.6.0 and above fixed that issue.
-
-When you go to a "chat2" character second time, extension might not register and try to download the conversations of previous character you visited. Refreshing solves this issue.
 # Feature List
 ### Conversation Page
 ###### Download Character (json)

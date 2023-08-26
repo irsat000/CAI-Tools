@@ -21,7 +21,7 @@ Some of the features will be available after some time has passed.
 Character AI developers are constantly updating the website. This comes with many new issues for this extension and I would like to have your new Github issues or emails for reporting. Feature requests are also welcome.
 
 # Known problems
-- If the character has two replies back to back, it will switch the user and character. Only affects Oobabooga and Tavern chats.
+- If the character has two replies back to back, it will switch the user and character from that point onwards. Only affects Oobabooga and Tavern chats.
 
 # Feature List
 ### Conversation Page

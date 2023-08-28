@@ -8,8 +8,8 @@ browser.webNavigation.onHistoryStateUpdated.addListener(function (details) {
             });
         }
 
-        if (details.url.includes("character.ai/histories") ||
-            details.url.includes("character.ai/chat")) {
+        if (!details.url.includes("character.ai/chats") &&
+            (details.url.includes("character.ai/histories") || details.url.includes("character.ai/chat"))) {
             //chat2 included
             chrome.tabs.sendMessage(details.tabId, {
                 name: "Create_Options_DOM",

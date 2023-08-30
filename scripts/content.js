@@ -95,22 +95,23 @@
         }
     }
 
-    function applyConversationMeta(converExtId, turns) {
+    function applyConversationMeta(converExtId, newSimplifiedChat) {
         if (document.querySelector(`meta[cai_converExtId="${converExtId}"]`)) {
             document.querySelector(`meta[cai_converExtId="${converExtId}"]`)
-                .setAttribute('cai_conversation', JSON.stringify(turns));
+                .setAttribute('cai_conversation', JSON.stringify(newSimplifiedChat));
         }
         else {
             const meta = document.createElement('meta');
             meta.setAttribute('cai_converExtId', converExtId);
-            meta.setAttribute('cai_conversation', JSON.stringify(turns));
+            meta.setAttribute('cai_conversation', JSON.stringify(newSimplifiedChat));
             document.head.appendChild(meta);
         }
         handleProgressInfoMeta(`(Ready!)`);
-        console.log("FINISHED");
+        console.log("FINISHED", newSimplifiedChat);
     }
 
     const fetchMessages = async ({ AccessToken, nextPage, converExtId, chatData, fetchDataType }) => {
+        console.log(nextPage);
         await new Promise(resolve => setTimeout(resolve, 200));
         let url = `https://${getMembership()}.character.ai/chat/history/msgs/user/?history_external_id=${converExtId}`;
         if (nextPage > 0) {
@@ -124,14 +125,24 @@
         })
             .then((res) => res.json())
             .then(async (data) => {
-                chatData.turns = [...chatData.turns, ...data.messages];
+
+                chatData.turns = [...data.messages, ...chatData.turns];
 
                 if (data.has_more == false) {
+                    const newSimplifiedChat = [];
+                    chatData.turns.filter(m => m.is_alternative == false && m.src__name != null).forEach((msg) => {
+                        const newSimplifiedMessage = {
+                            name: msg.src__name,
+                            message: msg.text
+                        }
+                        newSimplifiedChat.push(newSimplifiedMessage);
+                    });
+
                     if (fetchDataType === "conversation") {
-                        applyConversationMeta(converExtId, chatData.turns);
+                        applyConversationMeta(converExtId, newSimplifiedChat);
                     }
                     else if (fetchDataType === "history") {
-                        chatData.history.push(chatData.turns);
+                        chatData.history.push(newSimplifiedChat);
                         chatData.turns = [];
                     }
 
@@ -141,7 +152,7 @@
 
                 await fetchMessages({
                     AccessToken: AccessToken,
-                    nextPage: nextPage,
+                    nextPage: data.next_page,
                     converExtId: converExtId,
                     chatData: chatData,
                     fetchDataType: fetchDataType
@@ -175,11 +186,22 @@
             .then((res) => res.json())
             .then(async (data) => {
                 if (data.meta.next_token == null) {
+                    const newSimplifiedChat = [];
+                    chatData.turns.forEach((msg) => {
+                        const newSimplifiedMessage = {
+                            name: msg.author.name,
+                            message: msg.candidates[msg.candidates.length - 1].raw_content
+                        }
+                        newSimplifiedChat.push(newSimplifiedMessage);
+                    });
+
+                    newSimplifiedChat.reverse();
+
                     if (fetchDataType === "conversation") {
-                        applyConversationMeta(converExtId, chatData.turns);
+                        applyConversationMeta(converExtId, newSimplifiedChat);
                     }
                     else if (fetchDataType === "history") {
-                        chatData.history.push(chatData.turns);
+                        chatData.history.push(newSimplifiedChat);
                         chatData.turns = [];
                     }
 
@@ -227,9 +249,8 @@
             return;
         }
 
-        console.log(chatList);
         createFetchStartedMeta("true");
-        const finalHistory = [];
+        let finalHistory = [];
         let fetchedChatNumber = 1;
         const historyLength = (chatList.history1?.length || 0) + (chatList.history2?.length || 0);
 
@@ -248,20 +269,7 @@
                 handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${historyLength} completed)`);
             }
 
-            for (const chat of chatData.history) {
-                if (chat.length < 2) {
-                    continue;
-                }
-                const newSimplifiedChat = [];
-                chat.reverse().forEach((msg) => {
-                    const newSimplifiedMessage = {
-                        name: msg.author.name,
-                        message: encodeURIComponent(msg.candidates[msg.candidates.length - 1].raw_content)
-                    }
-                    newSimplifiedChat.push(newSimplifiedMessage);
-                });
-                finalHistory.push(newSimplifiedChat);
-            }
+            finalHistory = [...finalHistory, ...chatData.history];
         }
 
         // Fetch chat1 history
@@ -280,37 +288,21 @@
                 handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${historyLength} completed)`);
             }
 
-            for (const chat of chatData.history) {
-                if (chat.length < 2) {
-                    continue;
-                }
-                const newSimplifiedChat = [];
-                chat.reverse().filter(m => m.is_alternative == false && m.src__name != null).forEach((msg) => {
-                    const newSimplifiedMessage = {
-                        name: msg.src__name,
-                        message: encodeURIComponent(msg.text)
-                    }
-                    newSimplifiedChat.push(newSimplifiedMessage);
-                });
-                finalHistory.push(newSimplifiedChat);
-            }
+            finalHistory = [...finalHistory, ...chatData.history];
         }
 
-        try {
-            if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
-                document.querySelector('meta[cai_charid="' + charId + '"]')
-                    .setAttribute('cai_history', JSON.stringify(finalHistory));
-            }
-            else {
-                const meta = document.createElement('meta');
-                meta.setAttribute('cai_charid', charId);
-                meta.setAttribute('cai_history', JSON.stringify(finalHistory));
-                document.head.appendChild(meta);
-            }
-            handleProgressInfoMeta(`(Ready!)`);
-            console.log("FINISHED");
-        } catch (error) {
+        if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
+            document.querySelector('meta[cai_charid="' + charId + '"]')
+                .setAttribute('cai_history', JSON.stringify(finalHistory));
         }
+        else {
+            const meta = document.createElement('meta');
+            meta.setAttribute('cai_charid', charId);
+            meta.setAttribute('cai_history', JSON.stringify(finalHistory));
+            document.head.appendChild(meta);
+        }
+        handleProgressInfoMeta(`(Ready!)`);
+        console.log("FINISHED", finalHistory);
     };
 
     const fetchConversation = async (converExtId, pageType) => {
@@ -325,11 +317,12 @@
         };
         if (pageType === "chat") {
             args.nextPage = 0;
+            await fetchMessages(args);
         }
         else if (pageType === "chat2") {
             args.nextToken = null;
+            await fetchMessagesChat2(args);
         }
-        await fetchMessages(args);
     }
 
     // FETCH END
@@ -478,17 +471,17 @@
         });
 
         container.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
-            const args = { downloadType: 'oobabooga', pageType: pageType };
+            const args = { downloadType: 'oobabooga' };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
         container.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
-            const args = { downloadType: 'tavern', pageType: pageType };
+            const args = { downloadType: 'tavern' };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
         container.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
-            const args = { downloadType: 'example_chat', pageType: pageType };
+            const args = { downloadType: 'example_chat' };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
@@ -603,7 +596,6 @@
 
     // CONVERSATION
     function DownloadConversation(args) {
-        const pageType = args.pageType;
         const chatData =
             JSON.parse(document.querySelector(`meta[cai_converExtId="${getCurrentConverId()}"]`)?.getAttribute('cai_conversation') || 'null');
 
@@ -612,109 +604,84 @@
             return;
         }
 
-        console.log(chatData);
-
-        let charName = pageType === "chat"
-            ? chatData[0].src__name
-            : chatData[chatData.length - 1].author.name;
+        let charName = chatData[0].name;
 
         switch (args.downloadType) {
             case "oobabooga":
-                DownloadConversation_Oobabooga(chatData, args, charName);
+                DownloadConversation_Oobabooga(chatData, charName);
                 break;
             case "tavern":
-                DownloadConversation_Tavern(chatData, args, charName);
+                DownloadConversation_Tavern(chatData, charName);
                 break;
             case "example_chat":
-                DownloadConversation_ChatExample(chatData, args, charName);
+                DownloadConversation_ChatExample(chatData, charName);
                 break;
             default:
                 break;
         }
     }
 
-    function DownloadConversation_Oobabooga(chatData, args, charName) {
+    function DownloadConversation_Oobabooga(chatData, charName) {
         const ChatObject = {
             data: [],
             data_visible: [],
         };
 
-        if (args.pageType === "chat") {
-            chatData.shift();
-            let currentPair = [];
-            chatData.filter(msg => msg.is_alternative === false)
-                .forEach((msg, index) => {
-                    if (index % 2 == 0) {
-                        currentPair = [];
-                        currentPair.push(msg.text);
-                    }
-                    else {
-                        currentPair.push(msg.text);
-                        ChatObject.data.push(currentPair);
-                        ChatObject.data_visible.push(currentPair);
-                    }
-                });
-        }
-        else if (args.pageType === "chat2") {
-            const turns = chatData.reverse();
-            turns.shift();
-            turns.forEach((msg, index) => {
-                if (index % 2 == 0) {
-                    currentPair = [];
-                    currentPair.push(msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error");
-                }
-                else {
-                    currentPair.push(msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error");
-                    ChatObject.data.push(currentPair);
-                    ChatObject.data_visible.push(currentPair);
-                }
-            });
-        }
+        chatData.shift(); // Removes the initial message of the character. Oobabooga demands user's message to be first
+        let currentPair = [];
+        let prevName = null;
+
+        chatData.forEach((msg) => {
+            // If the current messager is the same as the previous one, skip this iteration
+            if (msg.name === prevName) {
+                return;
+            }
+
+            // If the current messager is different, push to currentPair
+            currentPair.push(msg.message);
+
+            // If currentPair has 2 messages, push to ChatObject and reset
+            if (currentPair.length === 2) {
+                ChatObject.data.push(currentPair);
+                ChatObject.data_visible.push(currentPair);
+                currentPair = [];
+            }
+
+            // Update the previous messager's name
+            prevName = msg.name;
+        });
 
         const Data_FinalForm = JSON.stringify(ChatObject);
         const blob = new Blob([Data_FinalForm], { type: 'text/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${charName}_${args.downloadType}_Chat.json`;
+        link.download = `${charName}_oobabooga_Chat.json`;
         link.click();
     }
 
-    function DownloadConversation_Tavern(chatData, args, charName) {
-        if (chatData.length <= 1) {
-            alert("The conversation is empty.")
-            return;
-        }
-        const blob = CreateTavernChatBlob(chatData, args, charName);
+    function DownloadConversation_Tavern(chatData, charName) {
+        const blob = CreateTavernChatBlob(chatData, charName);
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${charName}_${args.downloadType}_Chat.jsonl`;
+        link.download = `${charName}_tavern_Chat.jsonl`;
         link.click();
     }
 
-    function DownloadConversation_ChatExample(chatData, args, charName) {
+    function DownloadConversation_ChatExample(chatData, charName) {
         const messageList = [];
-        messageList.push("<START>");
-        if (args.pageType === "chat") {
-            chatData.filter(msg => msg.is_alternative === false)
-                .forEach(msg => {
-                    const user = msg.src__is_human ? "user" : "char";
-                    const message = `{{${user}}}: ${msg.text}`;
-                    messageList.push(message);
-                });
-        }
-        else if (args.pageType === "chat2") {
-            const turns = chatData.reverse();
-            turns.forEach(msg => {
-                const user = msg.author.is_human ? "user" : "char";
-                const message = `{{${user}}}: ${msg.candidates[msg.candidates.length - 1].raw_content}`;
-                messageList.push(message);
-            });
-        }
-        const chatString = messageList.join("\n");
 
-        const blob = new Blob([chatString], { type: 'text/plain' });
+        messageList.push("<START>");
+        chatData.forEach(msg => {
+            const messager = msg.name == charName ? "char" : "user";
+            const message = `{{${messager}}}: ${msg.message}`;
+            messageList.push(message);
+        });
+
+        const definitionString = messageList.join("\n");
+
+        const blob = new Blob([definitionString], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -722,11 +689,7 @@
         link.click();
     }
 
-    function CreateTavernChatBlob(chatData, args, charName) {
-
-        // NEXT STEP!!!
-
-
+    function CreateTavernChatBlob(chatData, charName) {
         const userName = 'You';
         const createDate = Date.now();
         const initialPart = JSON.stringify({
@@ -736,39 +699,27 @@
         });
         const outputLines = [initialPart];
 
-        if (args.pageType === "chat") {
-            chatData.filter(msg => msg.is_alternative === false).forEach((msg, index) => {
-                let currentUser = index % 2 == 0
-                    ? charName
-                    : "You";
-                const formattedMessage = JSON.stringify({
-                    name: currentUser,
-                    is_user: currentUser === "You",
-                    is_name: true,
-                    send_date: Date.now(),
-                    mes: msg.text
-                });
+        let prevName = null;
+        chatData.forEach((msg) => {
+            // If the current messager is the same as the previous one, skip this iteration
+            if (msg.name === prevName) {
+                return;
+            }
 
-                outputLines.push(formattedMessage);
+            const formattedMessage = JSON.stringify({
+                name: msg.name !== charName ? "You" : charName,
+                is_user: msg.name !== charName,
+                is_name: true,
+                send_date: Date.now(),
+                mes: msg.message
             });
-        }
-        else {
-            const turns = chatData.reverse();
-            turns.forEach((msg, index) => {
-                let currentUser = index % 2 == 0
-                    ? charName
-                    : "You";
-                const formattedMessage = JSON.stringify({
-                    name: currentUser,
-                    is_user: currentUser === "You",
-                    is_name: true,
-                    send_date: Date.now(),
-                    mes: msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error"
-                });
 
-                outputLines.push(formattedMessage);
-            });
-        }
+            outputLines.push(formattedMessage);
+
+            // Update the previous messager's name
+            prevName = msg.name;
+        });
+
         const outputString = outputLines.join('\n');
 
         return new Blob([outputString], { type: 'application/jsonl' });
@@ -804,17 +755,14 @@
             default:
                 break;
         }
-
-        // NO CHAT VERSION DISCRIMINATION. CHAT LIVES MATTER!
     }
 
     function DownloadHistory_OfflineReading(historyData, character_name) {
         let offlineHistory = [];
 
-        let i = 1;
-        historyData.forEach(chat => {
-            offlineHistory.push({ id: i, messages: chat });
-            i++;
+        historyData.forEach((chat, index) => {
+            chat.map(msg => msg.message = encodeURIComponent(msg.message))
+            offlineHistory.push({ id: index + 1, messages: chat });
         });
 
         var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
@@ -849,14 +797,14 @@
             messageList.push("<START>");
             chat.forEach(msg => {
                 const messager = msg.name == character_name ? "char" : "user";
-                const message = `{{${messager}}}: ${decodeURIComponent(msg.message)}`;
+                const message = `{{${messager}}}: ${msg.message}`;
                 messageList.push(message);
             });
         });
 
-        const messageString = messageList.join("\n");
+        const definitionString = messageList.join("\n");
 
-        const blob = new Blob([messageString], { type: 'text/plain' });
+        const blob = new Blob([definitionString], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

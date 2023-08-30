@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.6.4";
+    const extVersion = "1.6.5";
 
     const metadata = {
         version: 1,
@@ -95,11 +95,25 @@
         }
     }
 
-    let fetchedChatNumber = 1;
+    function applyConversationMeta(converExtId, newSimplifiedChat) {
+        if (document.querySelector(`meta[cai_converExtId="${converExtId}"]`)) {
+            document.querySelector(`meta[cai_converExtId="${converExtId}"]`)
+                .setAttribute('cai_conversation', JSON.stringify(newSimplifiedChat));
+        }
+        else {
+            const meta = document.createElement('meta');
+            meta.setAttribute('cai_converExtId', converExtId);
+            meta.setAttribute('cai_conversation', JSON.stringify(newSimplifiedChat));
+            document.head.appendChild(meta);
+        }
+        handleProgressInfoMeta(`(Ready!)`);
+        console.log("FINISHED", newSimplifiedChat);
+    }
 
-    const fetchMessages = async ({ fetchDataType, nextPage, AccessToken, chatExternalId, chat, chatsLength, converList }) => {
+    const fetchMessages = async ({ AccessToken, nextPage, converExtId, chatData, fetchDataType }) => {
+        console.log(nextPage);
         await new Promise(resolve => setTimeout(resolve, 200));
-        let url = `https://${getMembership()}.character.ai/chat/history/msgs/user/?history_external_id=${chatExternalId}`;
+        let url = `https://${getMembership()}.character.ai/chat/history/msgs/user/?history_external_id=${converExtId}`;
         if (nextPage > 0) {
             url += `&page_num=${nextPage}`;
         }
@@ -111,100 +125,48 @@
         })
             .then((res) => res.json())
             .then(async (data) => {
-                console.log(nextPage);
 
-                if (fetchDataType === "history") {
-                    let newMsgGroup = [];
-                    data.messages.forEach(message => {
-                        let newMessage = {
-                            annotatable: true,
-                            created: chat.created,
-                            display_name: message.src__name,
-                            id: message.id,
-                            image_rel_path: message.image_rel_path,
-                            is_alternative: message.is_alternative,
-                            src: {
-                                is_human: message.src__is_human,
-                                name: message.src__name,
-                                num_interactions: 1,
-                                user: {
-                                    account: null,
-                                    first_name: message.src__name,
-                                    id: 1,
-                                    is_staff: false,
-                                    username: message.src__user__username
-                                }
-                            },
-                            text: message.text,
-                            tgt: {
-                                is_human: !message.src__is_human,
-                                name: message.tgt,
-                                num_interactions: 1,
-                                user: {
-                                    account: null,
-                                    first_name: message.tgt,
-                                    id: 1,
-                                    is_staff: false,
-                                    username: message.tgt
-                                }
-                            }
-                        };
-                        newMsgGroup.push(newMessage);
+                chatData.turns = [...data.messages, ...chatData.turns];
+
+                if (data.has_more == false) {
+                    const newSimplifiedChat = [];
+                    chatData.turns.filter(m => m.is_alternative == false && m.src__name != null).forEach((msg) => {
+                        const newSimplifiedMessage = {
+                            name: msg.src__name,
+                            message: msg.text
+                        }
+                        newSimplifiedChat.push(newSimplifiedMessage);
                     });
 
-                    chat.msgs = chat.msgs.length > 0
-                        ? [...newMsgGroup, ...chat.msgs]
-                        : newMsgGroup;
-                }
-                else if (fetchDataType === "conversation") {
-                    converList = converList.length > 0
-                        ? [...data.messages, ...converList]
-                        : data.messages;
-                }
-
-                if (data.has_more) {
-                    await fetchMessages({
-                        fetchDataType: fetchDataType,
-                        nextPage: data.next_page,
-                        AccessToken: AccessToken,
-                        chatExternalId: chatExternalId,
-                        chat: chat,
-                        chatsLength: chatsLength,
-                        converList: converList
-                    });
-                }
-                else if (fetchDataType === "history") {
-                    fetchedChatNumber++;
-                    handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${chatsLength} completed)`);
-                }
-                else if (fetchDataType === "conversation") {
-                    if (converList.length > 0) {
-                        console.log("FINISHED");
-                        if (document.querySelector(`meta[cai_converExtId="${chatExternalId}"]`)) {
-                            document.querySelector(`meta[cai_converExtId="${chatExternalId}"]`)
-                                .setAttribute('cai_conversation', JSON.stringify(converList));
-                        }
-                        else {
-                            const meta = document.createElement('meta');
-                            meta.setAttribute('cai_converExtId', chatExternalId);
-                            meta.setAttribute('cai_conversation', JSON.stringify(converList));
-                            document.head.appendChild(meta);
-                        }
-                        handleProgressInfoMeta(`(Ready!)`);
+                    if (fetchDataType === "conversation") {
+                        applyConversationMeta(converExtId, newSimplifiedChat);
                     }
+                    else if (fetchDataType === "history") {
+                        chatData.history.push(newSimplifiedChat);
+                        chatData.turns = [];
+                    }
+
+                    return;
+                    // This was the last fetch for the chat
                 }
+
+                await fetchMessages({
+                    AccessToken: AccessToken,
+                    nextPage: data.next_page,
+                    converExtId: converExtId,
+                    chatData: chatData,
+                    fetchDataType: fetchDataType
+                });
             })
             .catch(async (err) => {
                 console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
                 await new Promise(resolve => setTimeout(resolve, 10000));
                 return await fetchMessages({
-                    fetchDataType: fetchDataType,
-                    nextPage: nextPage,
                     AccessToken: AccessToken,
-                    chatExternalId: chatExternalId,
-                    chat: chat,
-                    chatsLength: chatsLength,
-                    converList: converList
+                    nextPage: nextPage,
+                    converExtId: converExtId,
+                    chatData: chatData,
+                    fetchDataType: fetchDataType
                 });
             });
     };
@@ -224,28 +186,28 @@
             .then((res) => res.json())
             .then(async (data) => {
                 if (data.meta.next_token == null) {
+                    const newSimplifiedChat = [];
+                    chatData.turns.forEach((msg) => {
+                        const newSimplifiedMessage = {
+                            name: msg.author.name,
+                            message: msg.candidates[msg.candidates.length - 1].raw_content
+                        }
+                        newSimplifiedChat.push(newSimplifiedMessage);
+                    });
+
+                    newSimplifiedChat.reverse();
+
                     if (fetchDataType === "conversation") {
-                        console.log("FINISHED");
-                        if (document.querySelector(`meta[cai_converExtId="${converExtId}"]`)) {
-                            document.querySelector(`meta[cai_converExtId="${converExtId}"]`)
-                                .setAttribute('cai_conversation', JSON.stringify(chatData.turns));
-                        }
-                        else {
-                            const meta = document.createElement('meta');
-                            meta.setAttribute('cai_converExtId', converExtId);
-                            meta.setAttribute('cai_conversation', JSON.stringify(chatData.turns));
-                            document.head.appendChild(meta);
-                        }
-                        handleProgressInfoMeta(`(Ready!)`);
+                        applyConversationMeta(converExtId, newSimplifiedChat);
                     }
                     else if (fetchDataType === "history") {
-                        chatData.histories2.push(chatData.turns);
+                        chatData.history.push(newSimplifiedChat);
                         chatData.turns = [];
                     }
 
                     return;
-                    //If null, stops function and prevents calling function more
-                    //This means the fetching is finished
+                    // If next_token is null, stops function and prevents calling function more
+                    // This was the last fetch for the chat
                 }
 
                 chatData.turns = [...chatData.turns, ...data.turns];
@@ -273,103 +235,93 @@
 
     const fetchHistory = async (charId) => {
         const metaChar = document.querySelector('meta[cai_charid="' + charId + '"]');
-        if (metaChar == null) {
+        const AccessToken = getAccessToken();
+        // Safety check
+        if (metaChar == null || AccessToken == null) {
             return;
         }
+        const chatList = {
+            history1: JSON.parse(metaChar.getAttribute('cai_history1_chatlist')),
+            history2: JSON.parse(metaChar.getAttribute('cai_history2_chatlist'))
+        }
+        if (!chatList.history1 && !chatList.history2) {
+            alert("Failed to get history");
+            return;
+        }
+
         createFetchStartedMeta("true");
-        const AccessToken = getAccessToken();
-        if (metaChar.getAttribute('cai_temphistory2') != null && AccessToken != null) {
-            const tempHistoryData = JSON.parse(metaChar.getAttribute('cai_temphistory2'));
-            const chatsLength = tempHistoryData.chats.length;
-            let fetchedChatNumber = 1;
-            const chatData = { histories2: [], turns: [] }
-            for (const chat of tempHistoryData.chats) {
+        let finalHistory = [];
+        let fetchedChatNumber = 1;
+        const historyLength = (chatList.history1?.length || 0) + (chatList.history2?.length || 0);
+
+        // Fetch chat2 history
+        if (chatList.history2) {
+            const chatData = { history: [], turns: [] }
+            for (const chatId of chatList.history2) {
                 await fetchMessagesChat2({
                     AccessToken: AccessToken,
                     nextToken: null,
-                    converExtId: chat.chat_id,
+                    converExtId: chatId,
                     chatData: chatData,
                     fetchDataType: "history"
                 });
                 fetchedChatNumber++;
-                handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${chatsLength} completed)`);
+                handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${historyLength} completed)`);
             }
-            console.log("FINISHED");
 
-            if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
-                document.querySelector('meta[cai_charid="' + charId + '"]')
-                    .setAttribute('cai_history', JSON.stringify(chatData));
-            }
-            else {
-                const meta = document.createElement('meta');
-                meta.setAttribute('cai_charid', charId);
-                meta.setAttribute('cai_history', JSON.stringify(chatData));
-                document.head.appendChild(meta);
-            }
-            handleProgressInfoMeta(`(Ready!)`);
+            finalHistory = [...finalHistory, ...chatData.history];
         }
-        else if (metaChar.getAttribute('cai_temphistory') != null && AccessToken != null) {
-            const tempHistoryData = JSON.parse(metaChar.getAttribute('cai_temphistory'));
 
-            const chatsLength = tempHistoryData.histories.length;
-            for (const chat of tempHistoryData.histories) {
-                chat.msgs = [];
-                const chatExternalId = chat.external_id;
+        // Fetch chat1 history
+        // Will be after chat2 because if there is chat2 then the character is primarily chat2 char
+        if (chatList.history1) {
+            const chatData = { history: [], turns: [] }
+            for (const chatId of chatList.history1) {
                 await fetchMessages({
-                    fetchDataType: "history",
-                    nextPage: 0,
                     AccessToken: AccessToken,
-                    chatExternalId: chatExternalId,
-                    chat: chat,
-                    chatsLength: chatsLength,
-                    converList: null
+                    nextPage: 0,
+                    converExtId: chatId,
+                    chatData: chatData,
+                    fetchDataType: "history"
                 });
+                fetchedChatNumber++;
+                handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${historyLength} completed)`);
             }
-            console.log(tempHistoryData);
-            console.log("FINISHED");
-            if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
-                document.querySelector('meta[cai_charid="' + charId + '"]')
-                    .setAttribute('cai_history', JSON.stringify(tempHistoryData));
-            }
-            else {
-                const meta = document.createElement('meta');
-                meta.setAttribute('cai_charid', charId);
-                meta.setAttribute('cai_history', JSON.stringify(tempHistoryData));
-                document.head.appendChild(meta);
-            }
-            handleProgressInfoMeta(`(Ready!)`);
+
+            finalHistory = [...finalHistory, ...chatData.history];
+        }
+
+        if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
+            document.querySelector('meta[cai_charid="' + charId + '"]')
+                .setAttribute('cai_history', JSON.stringify(finalHistory));
         }
         else {
-            createFetchStartedMeta("false");
-            alert("Failed to get history.");
-            return;
+            const meta = document.createElement('meta');
+            meta.setAttribute('cai_charid', charId);
+            meta.setAttribute('cai_history', JSON.stringify(finalHistory));
+            document.head.appendChild(meta);
         }
+        handleProgressInfoMeta(`(Ready!)`);
+        console.log("FINISHED", finalHistory);
     };
 
     const fetchConversation = async (converExtId, pageType) => {
         createFetchStartedMeta_Conversation("true", converExtId);
         const AccessToken = getAccessToken();
+        const chatData = { history: [], turns: [] };
+        let args = {
+            AccessToken: AccessToken,
+            converExtId: converExtId,
+            chatData: chatData,
+            fetchDataType: "conversation"
+        };
         if (pageType === "chat") {
-            let converList = [];
-            await fetchMessages({
-                fetchDataType: "conversation",
-                nextPage: 0,
-                AccessToken: AccessToken,
-                chatExternalId: converExtId,
-                chat: null,
-                chatsLength: null,
-                converList: converList
-            });
+            args.nextPage = 0;
+            await fetchMessages(args);
         }
         else if (pageType === "chat2") {
-            const chatData = { turns: [] }
-            await fetchMessagesChat2({
-                AccessToken: AccessToken,
-                nextToken: null,
-                converExtId: converExtId,
-                chatData: chatData,
-                fetchDataType: "conversation"
-            });
+            args.nextToken = null;
+            await fetchMessagesChat2(args);
         }
     }
 
@@ -519,17 +471,17 @@
         });
 
         container.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
-            const args = { downloadType: 'oobabooga', pageType: pageType };
+            const args = { downloadType: 'oobabooga' };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
         container.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
-            const args = { downloadType: 'tavern', pageType: pageType };
+            const args = { downloadType: 'tavern' };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
         container.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
-            const args = { downloadType: 'example_chat', pageType: pageType };
+            const args = { downloadType: 'example_chat' };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
@@ -565,14 +517,6 @@
                 </div>
             </div>
         `;
-        /*
-            <h6>Misc</h6>
-            <ul>
-                <li data-cait_type=''></li>
-                <li data-cait_type='cai_dump'>Raw Dump (json)</li>
-                <li data-cait_type='cai_dump_anon'>Raw Dump (anonymous)</li>
-            </ul>
-        */
         container.appendChild(parseHTML_caiTools(cai_tools_string));
 
         const historyMeta = document.querySelector(`meta[cai_charid="${charId}"][cai_history]`);
@@ -630,16 +574,6 @@
             DownloadHistory(args);
             close_caiToolsModal(container);
         });
-        /*container.querySelector('.cai_tools-cont [data-cait_type="cai_dump"]').addEventListener('click', () => {
-            const args = { downloadType: 'cai_dump' };
-            DownloadHistory(args);
-            close_caiToolsModal(container);
-        });
-        container.querySelector('.cai_tools-cont [data-cait_type="cai_dump_anon"]').addEventListener('click', () => {
-            const args = { downloadType: 'cai_dump_anon' };
-            DownloadHistory(args);
-            close_caiToolsModal(container);
-        });*/
         container.querySelector('.cai_tools-cont [data-cait_type="cai_tavern_history"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_tavern_history' };
             DownloadHistory(args);
@@ -662,119 +596,92 @@
 
     // CONVERSATION
     function DownloadConversation(args) {
-        const pageType = args.pageType;
-        const chatData = document.querySelector(`meta[cai_converExtId="${getCurrentConverId()}"]`)?.getAttribute('cai_conversation') != null
-            ? JSON.parse(document.querySelector(`meta[cai_converExtId="${getCurrentConverId()}"]`).getAttribute('cai_conversation'))
-            : null;
+        const chatData =
+            JSON.parse(document.querySelector(`meta[cai_converExtId="${getCurrentConverId()}"]`)?.getAttribute('cai_conversation') || 'null');
 
         if (chatData == null) {
             alert("Data doesn't exist or not ready. Try again later.")
             return;
         }
 
-        console.log(chatData);
-
-        let charName = pageType === "chat"
-            ? chatData[0].src__name
-            : chatData[chatData.length - 1].author.name;
+        let charName = chatData[0].name;
 
         switch (args.downloadType) {
             case "oobabooga":
-                DownloadConversation_Oobabooga(chatData, args, charName);
+                DownloadConversation_Oobabooga(chatData, charName);
                 break;
             case "tavern":
-                DownloadConversation_Tavern(chatData, args, charName);
+                DownloadConversation_Tavern(chatData, charName);
                 break;
             case "example_chat":
-                DownloadConversation_ChatExample(chatData, args, charName);
+                DownloadConversation_ChatExample(chatData, charName);
                 break;
             default:
                 break;
         }
     }
 
-    function DownloadConversation_Oobabooga(chatData, args, charName) {
+    function DownloadConversation_Oobabooga(chatData, charName) {
         const ChatObject = {
             data: [],
             data_visible: [],
         };
 
-        if (args.pageType === "chat") {
-            chatData.shift();
-            let currentPair = [];
-            chatData.filter(msg => msg.is_alternative === false)
-                .forEach((msg, index) => {
-                    if (index % 2 == 0) {
-                        currentPair = [];
-                        currentPair.push(msg.text);
-                    }
-                    else {
-                        currentPair.push(msg.text);
-                        ChatObject.data.push(currentPair);
-                        ChatObject.data_visible.push(currentPair);
-                    }
-                });
-        }
-        else if (args.pageType === "chat2") {
-            const turns = chatData.reverse();
-            turns.shift();
-            turns.forEach((msg, index) => {
-                if (index % 2 == 0) {
-                    currentPair = [];
-                    currentPair.push(msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error");
-                }
-                else {
-                    currentPair.push(msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error");
-                    ChatObject.data.push(currentPair);
-                    ChatObject.data_visible.push(currentPair);
-                }
-            });
-        }
+        chatData.shift(); // Removes the initial message of the character. Oobabooga demands user's message to be first
+        let currentPair = [];
+        let prevName = null;
+
+        chatData.forEach((msg) => {
+            // If the current messager is the same as the previous one, skip this iteration
+            if (msg.name === prevName) {
+                return;
+            }
+
+            // If the current messager is different, push to currentPair
+            currentPair.push(msg.message);
+
+            // If currentPair has 2 messages, push to ChatObject and reset
+            if (currentPair.length === 2) {
+                ChatObject.data.push(currentPair);
+                ChatObject.data_visible.push(currentPair);
+                currentPair = [];
+            }
+
+            // Update the previous messager's name
+            prevName = msg.name;
+        });
 
         const Data_FinalForm = JSON.stringify(ChatObject);
         const blob = new Blob([Data_FinalForm], { type: 'text/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${charName}_${args.downloadType}_Chat.json`;
+        link.download = `${charName}_oobabooga_Chat.json`;
         link.click();
     }
 
-    function DownloadConversation_Tavern(chatData, args, charName) {
-        if (chatData.length <= 1) {
-            alert("The conversation is empty.")
-            return;
-        }
-        const blob = CreateTavernChatBlob(chatData, args, charName);
+    function DownloadConversation_Tavern(chatData, charName) {
+        const blob = CreateTavernChatBlob(chatData, charName);
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${charName}_${args.downloadType}_Chat.jsonl`;
+        link.download = `${charName}_tavern_Chat.jsonl`;
         link.click();
     }
 
-    function DownloadConversation_ChatExample(chatData, args, charName) {
+    function DownloadConversation_ChatExample(chatData, charName) {
         const messageList = [];
-        messageList.push("<START>");
-        if (args.pageType === "chat") {
-            chatData.filter(msg => msg.is_alternative === false)
-                .forEach(msg => {
-                    const user = msg.src__is_human ? "user" : "char";
-                    const message = `{{${user}}}: ${msg.text}`;
-                    messageList.push(message);
-                });
-        }
-        else if (args.pageType === "chat2") {
-            const turns = chatData.reverse();
-            turns.forEach(msg => {
-                const user = msg.author.is_human ? "user" : "char";
-                const message = `{{${user}}}: ${msg.candidates[msg.candidates.length - 1].raw_content}`;
-                messageList.push(message);
-            });
-        }
-        const chatString = messageList.join("\n");
 
-        const blob = new Blob([chatString], { type: 'text/plain' });
+        messageList.push("<START>");
+        chatData.forEach(msg => {
+            const messager = msg.name == charName ? "char" : "user";
+            const message = `{{${messager}}}: ${msg.message}`;
+            messageList.push(message);
+        });
+
+        const definitionString = messageList.join("\n");
+
+        const blob = new Blob([definitionString], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -782,7 +689,7 @@
         link.click();
     }
 
-    function CreateTavernChatBlob(chatData, args, charName) {
+    function CreateTavernChatBlob(chatData, charName) {
         const userName = 'You';
         const createDate = Date.now();
         const initialPart = JSON.stringify({
@@ -792,39 +699,27 @@
         });
         const outputLines = [initialPart];
 
-        if (args.pageType === "chat") {
-            chatData.filter(msg => msg.is_alternative === false).forEach((msg, index) => {
-                let currentUser = index % 2 == 0
-                    ? charName
-                    : "You";
-                const formattedMessage = JSON.stringify({
-                    name: currentUser,
-                    is_user: currentUser === "You",
-                    is_name: true,
-                    send_date: Date.now(),
-                    mes: msg.text
-                });
+        let prevName = null;
+        chatData.forEach((msg) => {
+            // If the current messager is the same as the previous one, skip this iteration
+            if (msg.name === prevName) {
+                return;
+            }
 
-                outputLines.push(formattedMessage);
+            const formattedMessage = JSON.stringify({
+                name: msg.name !== charName ? "You" : charName,
+                is_user: msg.name !== charName,
+                is_name: true,
+                send_date: Date.now(),
+                mes: msg.message
             });
-        }
-        else {
-            const turns = chatData.reverse();
-            turns.forEach((msg, index) => {
-                let currentUser = index % 2 == 0
-                    ? charName
-                    : "You";
-                const formattedMessage = JSON.stringify({
-                    name: currentUser,
-                    is_user: currentUser === "You",
-                    is_name: true,
-                    send_date: Date.now(),
-                    mes: msg.candidates[msg.candidates.length - 1].raw_content ?? "Message error"
-                });
 
-                outputLines.push(formattedMessage);
-            });
-        }
+            outputLines.push(formattedMessage);
+
+            // Update the previous messager's name
+            prevName = msg.name;
+        });
+
         const outputString = outputLines.join('\n');
 
         return new Blob([outputString], { type: 'application/jsonl' });
@@ -836,90 +731,39 @@
 
     function DownloadHistory(args) {
         const charId = getCharId();
-        const historyData = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_history') != null
-            ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_history'))
-            : null;
-        const charInfo = document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_info') != null
-            ? JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]').getAttribute('cai_info'))
-            : null;
+        const historyData =
+            JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_history') || 'null');
 
-        if (historyData == null || charInfo == null) {
+        if (historyData == null) {
             alert("Data doesn't exist or not ready. Try again later.")
             return;
         }
 
-        const character_name = historyData.histories2 != null
-            ? historyData.histories2[0][historyData.histories2[0].length - 1].author.name
-            : historyData.histories.reverse()
-                .flatMap(obj => obj.msgs.filter(msg => msg.src != null && msg.src.is_human === false && msg.src.name != null))
-                .find(msg => msg.src.name !== null)?.src.name ?? null;
+        const character_name = historyData[0][0].name;
 
-        const isChat2History = historyData.histories2 ? true : false;
         const dtype = args.downloadType;
         switch (dtype) {
             case "cai_offline_read":
-                DownloadHistory_OfflineReading(historyData, character_name, isChat2History);
+                DownloadHistory_OfflineReading(historyData, character_name);
                 break;
-            /*case "cai_dump":
-                DownloadHistory_AsDump(historyData, charInfo, dtype, character_name);
-                break;
-            case "cai_dump_anon":
-                DownloadHistory_AsDump(historyData, charInfo, dtype, character_name);
-                //If not registered, askToFeedModel should be true
-                if (window.sessionStorage.getItem('askToFeedModel') !== "false") {
-                    let trainModel = confirm("Would you like to train models with this dump?");
-                    if (trainModel === true) {
-                        window.open("https://dump.nopanda.io/", "_blank");
-                    } else {
-                        window.sessionStorage.setItem('askToFeedModel', 'false');
-                    }
-                }
-                break;*/
             case "example_chat":
-                DownloadHistory_ExampleChat(historyData, character_name, isChat2History);
+                DownloadHistory_ExampleChat(historyData, character_name);
                 break;
             case "cai_tavern_history":
-                DownloadHistory_TavernHistory(historyData, character_name, isChat2History);
+                DownloadHistory_TavernHistory(historyData, character_name);
                 break;
             default:
                 break;
         }
     }
 
-    function DownloadHistory_OfflineReading(historyData, character_name, isChat2History) {
+    function DownloadHistory_OfflineReading(historyData, character_name) {
         let offlineHistory = [];
 
-        let i = 1;
-
-        if (isChat2History) {
-            historyData.histories2.filter(v => v.length > 1).forEach(obj => {
-                let messages = [];
-                obj.reverse();
-                obj.forEach(msg => {
-                    messages.push({
-                        messager: msg.author.name,
-                        text: encodeURIComponent(msg.candidates[msg.candidates.length - 1].raw_content)
-                    });
-                });
-                offlineHistory.push({ id: i, messages: messages });
-                i++;
-            });
-        }
-        else {
-            historyData.histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
-                let messages = [];
-
-                obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
-                    .forEach(msg => {
-                        messages.push({
-                            messager: msg.src.name,
-                            text: encodeURIComponent(msg.text)
-                        });
-                    });
-                offlineHistory.push({ id: i, messages: messages });
-                i++;
-            });
-        }
+        historyData.forEach((chat, index) => {
+            chat.map(msg => msg.message = encodeURIComponent(msg.message))
+            offlineHistory.push({ id: index + 1, messages: chat });
+        });
 
         var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
@@ -946,89 +790,21 @@
         xhr.send();
     }
 
-    function DownloadHistory_AsDump(historyData, charInfo, dtype, character_name) {
-
-        if (dtype === "cai_dump_anon") {
-            historyData.histories.filter(h => h.msgs != null && h.msgs.length > 1).forEach(history => {
-                history.msgs.forEach(msg => {
-                    if (msg.src.is_human === true) {
-                        msg.src.name = "pseudo";
-                        msg.src.user.username = "pseudo";
-                        msg.src.user.first_name = "pseudo";
-                        msg.src.user.id = 1;
-                        if (msg.src.user.account) {
-                            msg.src.user.account.avatar_file_name = "";
-                            msg.src.user.account.name = "pseudo";
-                        }
-                        msg.display_name = "pseudo";
-                    }
-                    if (msg.tgt.is_human === true) {
-                        msg.tgt.name = "pseudo";
-                        msg.tgt.user.username = "pseudo";
-                        msg.tgt.user.first_name = "pseudo";
-                        msg.tgt.user.id = 1;
-                        if (msg.tgt.user.account) {
-                            msg.tgt.user.account.avatar_file_name = "";
-                            msg.tgt.user.account.name = "pseudo";
-                        }
-                    }
-                })
-            })
-            charInfo.character.user__username = "[Your_Nickname]";
-        }
-
-        const CharacterDump = {
-            info: charInfo,
-            histories: historyData,
-        };
-
-        const Data_FinalForm = JSON.stringify(CharacterDump);
-        const blob = new Blob([Data_FinalForm], { type: 'text/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        if (dtype === "cai_dump_anon") {
-            link.download = character_name != null
-                ? character_name.replaceAll(' ', '_') + '_CaiDumpAnon.json'
-                : 'CAI_Dump_Anon.json';
-        } else {
-            link.download = character_name != null
-                ? character_name.replaceAll(' ', '_') + '_CaiDump.json'
-                : 'CAI_Dump.json';
-        }
-
-        link.click();
-    }
-
-    function DownloadHistory_ExampleChat(historyData, character_name, isChat2History) {
+    function DownloadHistory_ExampleChat(historyData, character_name) {
         const messageList = [];
 
-        if (isChat2History) {
-            historyData.histories2.filter(v => v.length > 1).forEach(obj => {
-                messageList.push("<START>");
-                obj.reverse();
-                obj.forEach(msg => {
-                    const user = msg.author.is_human ? "user" : "char";
-                    const message = `{{${user}}}: ${msg.candidates[msg.candidates.length - 1].raw_content}`;
-                    messageList.push(message);
-                });
+        historyData.forEach(chat => {
+            messageList.push("<START>");
+            chat.forEach(msg => {
+                const messager = msg.name == character_name ? "char" : "user";
+                const message = `{{${messager}}}: ${msg.message}`;
+                messageList.push(message);
             });
-        }
-        else {
-            historyData.histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
-                messageList.push("<START>");
-                obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
-                    .forEach(msg => {
-                        const user = msg.src.is_human ? "user" : "char";
-                        const message = `{{${user}}}: ${msg.text}`;
-                        messageList.push(message);
-                    });
-            });
-        }
+        });
 
-        const messageString = messageList.join("\n");
+        const definitionString = messageList.join("\n");
 
-        const blob = new Blob([messageString], { type: 'text/plain' });
+        const blob = new Blob([definitionString], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -1039,22 +815,14 @@
     }
 
 
-    function DownloadHistory_TavernHistory(historyData, character_name, isChat2History) {
-        const histories = isChat2History ? historyData.histories2 : historyData.histories;
+    function DownloadHistory_TavernHistory(historyData, character_name) {
         const char_id = getCharId();
         const zip = new JSZip();
         let count = 0;
 
-        const filePromises = histories.filter(v => {
-            if (isChat2History) {
-                return v.length > 1;
-            } else {
-                return v.msgs != null && v.msgs.length > 1;
-            }
-        }).map(async (chat, index) => {
+        const filePromises = historyData.map(async (chat, index) => {
             count = index + 1;
-            const chatMessages = isChat2History ? chat : chat.msgs;
-            const blob = CreateTavernChatBlob(chatMessages, { pageType: isChat2History ? "chat2" : "chat" }, character_name);
+            const blob = CreateTavernChatBlob(chat, character_name);
             const arraybuffer = await readAsBinaryString(blob);
             zip.file(`chat_${index + 1}.jsonl`, arraybuffer, { binary: true });
         });

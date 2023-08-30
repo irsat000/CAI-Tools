@@ -8,7 +8,9 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
             });
         }
 
-        if (details.url.includes("character.ai/chat?char=") || details.url.includes("character.ai/chat2?char=")) {
+        if (details.url.includes("character.ai/chat?char=") ||
+            details.url.includes("character.ai/chat2?char=") ||
+            details.url.includes("character.ai/histories?char=")) {
             //chats and chat?hist= are not included. Former is characters, the latter is a room.
             chrome.tabs.sendMessage(details.tabId, {
                 name: "Create_Options_DOM",

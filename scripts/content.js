@@ -723,6 +723,10 @@
     }
 
     function CreateTavernChatBlob(chatData, args, charName) {
+
+        // NEXT STEP!!!
+
+
         const userName = 'You';
         const createDate = Date.now();
         const initialPart = JSON.stringify({
@@ -784,14 +788,8 @@
             return;
         }
 
-        /*const character_name = historyData.histories2 != null
-            ? historyData.histories2[0][historyData.histories2[0].length - 1].author.name
-            : historyData.histories.reverse()
-                .flatMap(obj => obj.msgs.filter(msg => msg.src != null && msg.src.is_human === false && msg.src.name != null))
-                .find(msg => msg.src.name !== null)?.src.name ?? null;*/
+        const character_name = historyData[0][0].name;
 
-        const character_name = "deneme";
-        
         const dtype = args.downloadType;
         switch (dtype) {
             case "cai_offline_read":
@@ -810,40 +808,14 @@
         // NO CHAT VERSION DISCRIMINATION. CHAT LIVES MATTER!
     }
 
-    function DownloadHistory_OfflineReading(historyData, character_name, isChat2History) {
+    function DownloadHistory_OfflineReading(historyData, character_name) {
         let offlineHistory = [];
 
         let i = 1;
-
-        if (isChat2History) {
-            historyData.histories2.filter(v => v.length > 1).forEach(obj => {
-                let messages = [];
-                obj.reverse();
-                obj.forEach(msg => {
-                    messages.push({
-                        messager: msg.author.name,
-                        text: encodeURIComponent(msg.candidates[msg.candidates.length - 1].raw_content)
-                    });
-                });
-                offlineHistory.push({ id: i, messages: messages });
-                i++;
-            });
-        }
-        else {
-            historyData.histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
-                let messages = [];
-
-                obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
-                    .forEach(msg => {
-                        messages.push({
-                            messager: msg.src.name,
-                            text: encodeURIComponent(msg.text)
-                        });
-                    });
-                offlineHistory.push({ id: i, messages: messages });
-                i++;
-            });
-        }
+        historyData.forEach(chat => {
+            offlineHistory.push({ id: i, messages: chat });
+            i++;
+        });
 
         var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
@@ -870,31 +842,17 @@
         xhr.send();
     }
 
-    function DownloadHistory_ExampleChat(historyData, character_name, isChat2History) {
+    function DownloadHistory_ExampleChat(historyData, character_name) {
         const messageList = [];
 
-        if (isChat2History) {
-            historyData.histories2.filter(v => v.length > 1).forEach(obj => {
-                messageList.push("<START>");
-                obj.reverse();
-                obj.forEach(msg => {
-                    const user = msg.author.is_human ? "user" : "char";
-                    const message = `{{${user}}}: ${msg.candidates[msg.candidates.length - 1].raw_content}`;
-                    messageList.push(message);
-                });
+        historyData.forEach(chat => {
+            messageList.push("<START>");
+            chat.forEach(msg => {
+                const messager = msg.name == character_name ? "char" : "user";
+                const message = `{{${messager}}}: ${decodeURIComponent(msg.message)}`;
+                messageList.push(message);
             });
-        }
-        else {
-            historyData.histories.filter(v => v.msgs != null && v.msgs.length > 1).forEach(obj => {
-                messageList.push("<START>");
-                obj.msgs.filter(msg => msg.is_alternative === false && msg.src != null && msg.src.name != null && msg.text != null)
-                    .forEach(msg => {
-                        const user = msg.src.is_human ? "user" : "char";
-                        const message = `{{${user}}}: ${msg.text}`;
-                        messageList.push(message);
-                    });
-            });
-        }
+        });
 
         const messageString = messageList.join("\n");
 
@@ -909,22 +867,14 @@
     }
 
 
-    function DownloadHistory_TavernHistory(historyData, character_name, isChat2History) {
-        const histories = isChat2History ? historyData.histories2 : historyData.histories;
+    function DownloadHistory_TavernHistory(historyData, character_name) {
         const char_id = getCharId();
         const zip = new JSZip();
         let count = 0;
 
-        const filePromises = histories.filter(v => {
-            if (isChat2History) {
-                return v.length > 1;
-            } else {
-                return v.msgs != null && v.msgs.length > 1;
-            }
-        }).map(async (chat, index) => {
+        const filePromises = historyData.map(async (chat, index) => {
             count = index + 1;
-            const chatMessages = isChat2History ? chat : chat.msgs;
-            const blob = CreateTavernChatBlob(chatMessages, { pageType: isChat2History ? "chat2" : "chat" }, character_name);
+            const blob = CreateTavernChatBlob(chat, character_name);
             const arraybuffer = await readAsBinaryString(blob);
             zip.file(`chat_${index + 1}.jsonl`, arraybuffer, { binary: true });
         });

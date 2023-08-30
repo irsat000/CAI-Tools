@@ -187,18 +187,18 @@
 
                 messages.forEach(msg => {
                     const clone = document.getElementById('message_template').content.cloneNode(true);
-                    clone.querySelector('.message-sourcename').textContent = msg.messager;
-                    clone.querySelector('.message-content').textContent = decodeURIComponent(msg.text);
+                    clone.querySelector('.message-sourcename').textContent = msg.name;
+                    clone.querySelector('.message-content').textContent = decodeURIComponent(msg.message);
 
                     if (messagerMap.get('bot')) {
-                        if (messagerMap.get('bot') === msg.messager) {
+                        if (messagerMap.get('bot') === msg.name) {
                             clone.querySelector('.pic-pseudo').classList.add('bot');
                         }
                     }
                     else {
-                        messagerMap.set('bot', msg.messager);
+                        messagerMap.set('bot', msg.name);
                         clone.querySelector('.pic-pseudo').classList.add('bot');
-                        document.querySelector('.character_name').textContent = msg.messager;
+                        document.querySelector('.character_name').textContent = msg.name;
                     }
                     ChatField.appendChild(clone);
                 });

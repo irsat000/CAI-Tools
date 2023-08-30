@@ -17,11 +17,12 @@ For history data, navigate to "View Chat Histories".
 Click on CAI Tools button on top right corner to open the menu. You will see all the features in there.
 
 Some of the features will be available after some time has passed.
+
 # News
 Character AI developers are constantly updating the website. This comes with many new issues for this extension and I would like to have your new Github issues or emails for reporting. Feature requests are also welcome.
 
 # Known problems
-- If the character has two replies back to back, it will switch the user and character from that point onwards. Only affects Oobabooga and Tavern chats.
+- None. Please let me know by creating an Issue if there are any.
 
 # Feature List
 ### Conversation Page
@@ -39,15 +40,11 @@ It downloads the conversation in Tavern chat format. You can continue the conver
 This turns the conversation into example chat/definition format so you can use it in CAI and other AI chat platforms. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
 
 ### History Page
+From v1.6.5 onwards, chat1 & chat2 are combined.
 ###### Download to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.
-###### Raw Dump (json) [DEPRECATED]
-It downloads the entire chat history and includes your character settings. You can use these two options to train models.
-###### Raw Dump (anonymous) [DEPRECATED]
-This is a better option if you want to hide your first name, username, display name etc.
 ###### Download as example chat
 This turns all your history into example chat/definition format so you can use them in CAI and other AI chat platforms. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
-
 ###### Tavern Chats (zip/jsonl)
 Similar to "Download as Tavern chat". You can download all chats in one go in Tavern format. It will download a zip file that contains .jsonl files.
 

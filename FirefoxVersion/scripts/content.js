@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.6.5";
+    const extVersion = "1.6.6";
 
     const metadata = {
         version: 1,
@@ -23,23 +23,41 @@
     xhookScript.crossOrigin = "anonymous";
     xhookScript.id = "xhook";
     xhookScript.onload = function () {
-        initialize_options_DOM();
+        initialize_options_DOM(window.location.pathname);
     };
     xhookScript.src = xhook_lib__url;
     const firstScript = document.getElementsByTagName("script")[0];
     firstScript.parentNode.insertBefore(xhookScript, firstScript);
 
 
-    extAPI.runtime.onMessage.addListener((obj, sender, response) => {
-        const { name, args } = obj;
-        if (name === "Create_Options_DOM") {
-            initialize_options_DOM();
+    // A function to handle mutations
+    function handleLocationChange(mutationsList, observer) {
+        // Check if the URL has changed
+        if (window.location.href !== observer.lastHref) {
+            observer.lastHref = window.location.href;
+
+            // Perform actions based on the URL change
+            const path = window.location.pathname;
+            if (path === "/chat" || path === "/chat2" || path === "/histories") {
+                initialize_options_DOM(path);
+            }
+            else {
+                // Handle the modal reset
+                handleProgressInfoMeta("(Loading...)");
+                cleanDOM();
+            }
         }
-        else if (name === "Reset_Modal") {
-            //document.querySelector(`meta[cai_currentConverExtId]`)?.remove(); //causes problems when the page is fast
-            handleProgressInfoMeta(`(Loading...)`);
-            cleanDOM();
-        }
+    }
+    // Create a MutationObserver instance
+    const locationObserver = new MutationObserver(handleLocationChange);
+    // Initialize the lastHref property
+    locationObserver.lastHref = window.location.href;
+    // Observe changes to the window.location.href
+    locationObserver.observe(document, {
+        childList: true,
+        attributes: false,
+        subtree: true,
+        characterData: false
     });
 
 
@@ -330,8 +348,8 @@
 
     // CAI Tools - DOM
 
-    function initialize_options_DOM() {
-        if (window.location.href.includes("character.ai/histories")) {
+    function initialize_options_DOM(path) {
+        if (path === '/histories') {
             const intervalId = setInterval(() => {
                 let container = document.querySelector('.apppage');
                 if (container != null) {
@@ -340,21 +358,17 @@
                 }
             }, 1000);
         }
-        else if (window.location.href.includes("character.ai/chat")) {
+        else if (path === '/chat' || path === '/chat2') {
             const intervalId = setInterval(() => {
                 let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
                 let container = document.querySelector('.apppage');
                 if (container != null && currentConverExtIdMeta != null) {
                     clearInterval(intervalId);
-                    if (window.location.href.includes("character.ai/chat2")) {
-                        create_options_DOM_Conversation(container, "chat2");
-                    }
-                    else {
-                        create_options_DOM_Conversation(container, "chat");
-                    }
+                    create_options_DOM_Conversation(container, path.slice(1)); // Removes '/' from the path
                 }
             }, 1000);
         }
+        // Else, the user is not in relevant pages.
     }
 
     function create_options_DOM_Conversation(container, pageType) {

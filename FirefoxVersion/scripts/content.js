@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.6.6";
+    const extVersion = "1.6.7";
 
     const metadata = {
         version: 1,
@@ -333,11 +333,11 @@
             chatData: chatData,
             fetchDataType: "conversation"
         };
-        if (pageType === "chat") {
+        if (pageType === "/chat") {
             args.nextPage = 0;
             await fetchMessages(args);
         }
-        else if (pageType === "chat2") {
+        else if (pageType === "/chat2") {
             args.nextToken = null;
             await fetchMessagesChat2(args);
         }
@@ -364,7 +364,7 @@
                 let container = document.querySelector('.apppage');
                 if (container != null && currentConverExtIdMeta != null) {
                     clearInterval(intervalId);
-                    create_options_DOM_Conversation(container, path.slice(1)); // Removes '/' from the path
+                    create_options_DOM_Conversation(container, path);
                 }
             }, 1000);
         }
@@ -646,8 +646,14 @@
         let prevName = null;
 
         chatData.forEach((msg) => {
-            // If the current messager is the same as the previous one, skip this iteration
+            // If the current messager is the same as the previous one, merge and skip this iteration
             if (msg.name === prevName) {
+                const dataLength = ChatObject.data.length - 1;
+                const pairLength = ChatObject.data[dataLength].length - 1;
+
+                let mergedMessage = ChatObject.data[dataLength][pairLength] += "\n\n" + msg.message;
+                ChatObject.data[dataLength][pairLength] = mergedMessage;
+                ChatObject.data_visible[dataLength][pairLength] = mergedMessage;
                 return;
             }
 
@@ -715,8 +721,11 @@
 
         let prevName = null;
         chatData.forEach((msg) => {
-            // If the current messager is the same as the previous one, skip this iteration
+            // If the current messager is the same as the previous one, merge and skip this iteration
             if (msg.name === prevName) {
+                let mergedMessage = JSON.parse(outputLines[outputLines.length - 1]);
+                mergedMessage.mes += "\n\n" + msg.message;
+                outputLines[outputLines.length - 1] = JSON.stringify(mergedMessage);
                 return;
             }
 

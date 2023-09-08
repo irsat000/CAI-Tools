@@ -397,6 +397,7 @@
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
+                            <li data-cait_type='cai_offline_read'>Download to read offline</li>
                             <li data-cait_type='oobabooga'>Download as Oobabooga chat</li>
 							<li data-cait_type='tavern'>Download as Tavern chat</li>
                             <li data-cait_type='example_chat'>Download as example chat/definition</li>
@@ -484,6 +485,11 @@
             close_caiToolsModal(container);
         });
 
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_offline_read' };
+            DownloadConversation(args);
+            close_caiToolsModal(container);
+        });
         container.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
             const args = { downloadType: 'oobabooga' };
             DownloadConversation(args);
@@ -621,6 +627,9 @@
         let charName = chatData[0].name;
 
         switch (args.downloadType) {
+            case "cai_offline_read":
+                Download_OfflineReading(chatData, charName);
+                break;
             case "oobabooga":
                 DownloadConversation_Oobabooga(chatData, charName);
                 break;
@@ -767,7 +776,7 @@
         const dtype = args.downloadType;
         switch (dtype) {
             case "cai_offline_read":
-                DownloadHistory_OfflineReading(historyData, character_name);
+                Download_OfflineReading(historyData, character_name);
                 break;
             case "example_chat":
                 DownloadHistory_ExampleChat(historyData, character_name);
@@ -781,18 +790,34 @@
     }
 
 
-    async function DownloadHistory_OfflineReading(historyData, character_name) {
-        let offlineHistory = [];
-
-        historyData.forEach((chat, index) => {
-            chat.map(msg => msg.message = encodeURIComponent(msg.message))
-            offlineHistory.push({ id: index + 1, messages: chat });
-        });
-
+    async function Download_OfflineReading(data, character_name) {
+        const username = document.querySelector(`meta[cait_user]`)?.getAttribute('cait_user') || 'Guest';
         const charPicture = await getAvatar('80', 'char');
         const userPicture = await getAvatar('80', 'user');
 
-        console.log({ charPicture: charPicture, userPicture: userPicture });
+        let offlineHistory = [];
+
+        if (Array.isArray(data[0])) {
+            // This is from history
+            data.forEach(chat => {
+                const chatTemp = [];
+                chat.map(msg => chatTemp.push({ isUser: msg.name != character_name, message: encodeURIComponent(msg.message) }));
+                offlineHistory.push(chatTemp);
+            });
+        } else {
+            // This is from conversation
+            const chatTemp = [];
+            data.map(obj => chatTemp.push({ isUser: obj.name != character_name, message: encodeURIComponent(obj.message) }));
+            offlineHistory.push(chatTemp);
+        }
+
+        const finalData = {
+            charName: character_name,
+            charPic: charPicture,
+            userName: username,
+            userPic: userPicture,
+            history: offlineHistory
+        }
 
         var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();

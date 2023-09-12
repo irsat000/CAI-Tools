@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "CAI Tools",
     "description": "Various tools for Character AI website.",
-    "version": "1.6.7",
+    "version": "1.7.0",
     "icons": {
         "128": "/logo128.png"
     },

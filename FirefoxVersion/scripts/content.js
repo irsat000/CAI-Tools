@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.6.7";
+    const extVersion = "1.7.0";
 
     const metadata = {
         version: 1,
@@ -646,23 +646,26 @@
 
     function DownloadConversation_Oobabooga(chatData, charName) {
         const ChatObject = {
-            data: [],
-            data_visible: [],
+            internal: [],
+            visible: [],
         };
 
-        chatData.shift(); // Removes the initial message of the character. Oobabooga demands user's message to be first
         let currentPair = [];
         let prevName = null;
 
-        chatData.forEach((msg) => {
+        // First pair's first message will be this and "" in visible
+        // First pair's second message is the starting message of the character
+        currentPair.push('<|BEGIN-VISIBLE-CHAT|>');
+
+        chatData.forEach((msg, index) => {
             // If the current messager is the same as the previous one, merge and skip this iteration
             if (msg.name === prevName) {
-                const dataLength = ChatObject.data.length - 1;
-                const pairLength = ChatObject.data[dataLength].length - 1;
+                const dataLength = ChatObject.internal.length - 1;
+                const pairLength = ChatObject.internal[dataLength].length - 1;
 
-                let mergedMessage = ChatObject.data[dataLength][pairLength] += "\n\n" + msg.message;
-                ChatObject.data[dataLength][pairLength] = mergedMessage;
-                ChatObject.data_visible[dataLength][pairLength] = mergedMessage;
+                let mergedMessage = ChatObject.internal[dataLength][pairLength] += "\n\n" + msg.message;
+                ChatObject.internal[dataLength][pairLength] = mergedMessage;
+                ChatObject.visible[dataLength][pairLength] = mergedMessage;
                 return;
             }
 
@@ -671,8 +674,9 @@
 
             // If currentPair has 2 messages, push to ChatObject and reset
             if (currentPair.length === 2) {
-                ChatObject.data.push(currentPair);
-                ChatObject.data_visible.push(currentPair);
+                const modifiedPair = index === 0 ? [""].concat(currentPair.slice(1)) : currentPair;
+                ChatObject.internal.push(currentPair);
+                ChatObject.visible.push(modifiedPair);
                 currentPair = [];
             }
 
@@ -819,6 +823,15 @@
             history: offlineHistory
         }
 
+        /*
+        const Data_FinalForm = JSON.stringify(finalData);
+        const blob = new Blob([Data_FinalForm], { type: 'text/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${character_name.replaceAll(' ', '_')}_history.json`;
+        link.click();
+        */
         var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
         xhr.open('GET', fileUrl, true);
@@ -942,6 +955,7 @@
                 //Permission check
                 if (data.character.length === 0) {
                     // No permission because it's someone else's character
+                    // /chat/character/info/ instead of /chat/character/ fixes that
                     const newUrl = "https://" + getMembership() + ".character.ai/chat/character/info/";
                     // To guarantee running once
                     if (fetchUrl != newUrl) {
@@ -1130,7 +1144,7 @@
         return new Promise(async (resolve, reject) => {
             try {
                 const AccessToken = getAccessToken();
-                const fetchUrl = identity === 'char' ? `https://${getMembership()}.character.ai/chat/character/` : `https://${getMembership()}.character.ai/chat/user/`;
+                const fetchUrl = identity === 'char' ? `https://${getMembership()}.character.ai/chat/character/info/` : `https://${getMembership()}.character.ai/chat/user/`;
                 const settings = identity === 'char' ? {
                     method: "POST",
                     headers: {
@@ -1155,6 +1169,7 @@
                     }
                     const data = await response.json();
                     const avatarPath = identity === 'char' ? data.character.avatar_file_name : data.user.user.account.avatar_file_name;
+
                     if (avatarPath == null || avatarPath == "") {
                         resolve(null);
                     } else {

@@ -826,8 +826,8 @@
             if (xhr.readyState === 4) {
                 var fileContents = xhr.responseText;
                 fileContents = fileContents.replace(
-                    '<<<CHAT_RAW_HISTORY>>>',
-                    JSON.stringify(offlineHistory)
+                    '<<<REPLACE_THIS_TEXT>>>',
+                    JSON.stringify(finalData)
                 );
 
                 var blob = new Blob([fileContents], { type: 'text/html' });

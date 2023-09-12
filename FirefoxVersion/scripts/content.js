@@ -397,6 +397,7 @@
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
+                            <li data-cait_type='cai_offline_read'>Download to read offline</li>
                             <li data-cait_type='oobabooga'>Download as Oobabooga chat</li>
 							<li data-cait_type='tavern'>Download as Tavern chat</li>
                             <li data-cait_type='example_chat'>Download as example chat/definition</li>
@@ -484,6 +485,11 @@
             close_caiToolsModal(container);
         });
 
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_offline_read' };
+            DownloadConversation(args);
+            close_caiToolsModal(container);
+        });
         container.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
             const args = { downloadType: 'oobabooga' };
             DownloadConversation(args);
@@ -621,6 +627,9 @@
         let charName = chatData[0].name;
 
         switch (args.downloadType) {
+            case "cai_offline_read":
+                Download_OfflineReading(chatData, charName);
+                break;
             case "oobabooga":
                 DownloadConversation_Oobabooga(chatData, charName);
                 break;
@@ -767,7 +776,7 @@
         const dtype = args.downloadType;
         switch (dtype) {
             case "cai_offline_read":
-                DownloadHistory_OfflineReading(historyData, character_name);
+                Download_OfflineReading(historyData, character_name);
                 break;
             case "example_chat":
                 DownloadHistory_ExampleChat(historyData, character_name);
@@ -780,13 +789,35 @@
         }
     }
 
-    function DownloadHistory_OfflineReading(historyData, character_name) {
+
+    async function Download_OfflineReading(data, character_name) {
+        const username = document.querySelector(`meta[cait_user]`)?.getAttribute('cait_user') || 'Guest';
+        const charPicture = await getAvatar('80', 'char');
+        const userPicture = await getAvatar('80', 'user');
+
         let offlineHistory = [];
 
-        historyData.forEach((chat, index) => {
-            chat.map(msg => msg.message = encodeURIComponent(msg.message))
-            offlineHistory.push({ id: index + 1, messages: chat });
-        });
+        if (Array.isArray(data[0])) {
+            // This is from history
+            data.forEach(chat => {
+                const chatTemp = [];
+                chat.map(msg => chatTemp.push({ isUser: msg.name != character_name, message: encodeURIComponent(msg.message) }));
+                offlineHistory.push(chatTemp);
+            });
+        } else {
+            // This is from conversation
+            const chatTemp = [];
+            data.map(obj => chatTemp.push({ isUser: obj.name != character_name, message: encodeURIComponent(obj.message) }));
+            offlineHistory.push(chatTemp);
+        }
+
+        const finalData = {
+            charName: character_name,
+            charPic: charPicture,
+            userName: username,
+            userPic: userPicture,
+            history: offlineHistory
+        }
 
         var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
@@ -795,8 +826,8 @@
             if (xhr.readyState === 4) {
                 var fileContents = xhr.responseText;
                 fileContents = fileContents.replace(
-                    '<<<CHAT_RAW_HISTORY>>>',
-                    JSON.stringify(offlineHistory)
+                    '<<<REPLACE_THIS_TEXT>>>',
+                    JSON.stringify(finalData)
                 );
 
                 var blob = new Blob([fileContents], { type: 'text/html' });
@@ -1088,6 +1119,76 @@
     // CHARACTER DOWNLOAD - END
 
 
+
+
+
+    // UTILITY
+
+    async function getAvatar(avatarSize, identity) {
+        // 80 / 400 - avatarSize
+        // char / user - identity
+        return new Promise(async (resolve, reject) => {
+            try {
+                const AccessToken = getAccessToken();
+                const fetchUrl = identity === 'char' ? `https://${getMembership()}.character.ai/chat/character/` : `https://${getMembership()}.character.ai/chat/user/`;
+                const settings = identity === 'char' ? {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        "authorization": AccessToken
+                    },
+                    body: JSON.stringify({ external_id: getCharId() })
+                } : {
+                    method: "GET",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        "authorization": AccessToken
+                    }
+                }
+
+                if (AccessToken != null) {
+                    const response = await fetch(fetchUrl, settings);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch data. Status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    const avatarPath = identity === 'char' ? data.character.avatar_file_name : data.user.user.account.avatar_file_name;
+                    if (avatarPath == null || avatarPath == "") {
+                        resolve(null);
+                    } else {
+                        const avatarLink = `https://characterai.io/i/${avatarSize}/static/avatars/${avatarPath}`;
+                        const avatarResponse = await fetch(avatarLink);
+                        if (!avatarResponse.ok) {
+                            throw new Error(`Failed to fetch avatar. Status: ${avatarResponse.status}`);
+                        }
+                        const avifBlob = await avatarResponse.blob();
+
+                        // Create a FileReader to read the blob as a base64 string
+                        const reader = new FileReader();
+
+                        reader.onload = function () {
+                            // The result property contains the base64 string
+                            const base64String = reader.result;
+                            resolve(base64String);
+                        };
+
+                        reader.onerror = function (error) {
+                            reject(error);
+                        };
+
+                        // Read the blob as data URL (base64)
+                        reader.readAsDataURL(avifBlob);
+                    }
+                } else {
+                    resolve(null);
+                }
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
 
 
 

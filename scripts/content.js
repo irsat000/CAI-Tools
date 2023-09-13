@@ -653,11 +653,10 @@
         let currentPair = [];
         let prevName = null;
 
-        // First pair's first message will be this and "" in visible
-        // First pair's second message is the starting message of the character
-        currentPair.push('<|BEGIN-VISIBLE-CHAT|>');
-
-        chatData.forEach((msg, index) => {
+        // User's message first
+        chatData.shift();
+        
+        chatData.forEach((msg) => {
             // If the current messager is the same as the previous one, merge and skip this iteration
             if (msg.name === prevName) {
                 const dataLength = ChatObject.internal.length - 1;
@@ -674,9 +673,8 @@
 
             // If currentPair has 2 messages, push to ChatObject and reset
             if (currentPair.length === 2) {
-                const modifiedPair = index === 0 ? [""].concat(currentPair.slice(1)) : currentPair;
                 ChatObject.internal.push(currentPair);
-                ChatObject.visible.push(modifiedPair);
+                ChatObject.visible.push(currentPair);
                 currentPair = [];
             }
 
@@ -823,15 +821,6 @@
             history: offlineHistory
         }
 
-        /*
-        const Data_FinalForm = JSON.stringify(finalData);
-        const blob = new Blob([Data_FinalForm], { type: 'text/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${character_name.replaceAll(' ', '_')}_history.json`;
-        link.click();
-        */
         var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
         xhr.open('GET', fileUrl, true);

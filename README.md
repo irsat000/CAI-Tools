@@ -38,6 +38,8 @@ It downloads the conversation in Oobabooga chat format. You can continue the con
 It downloads the conversation in Tavern chat format. You can continue the conversation in Tavern with it.
 ###### Download as example chat
 This turns the conversation into example chat/definition format so you can use it in CAI and other AI chat platforms. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
+###### Download to read offline
+It downloads an .html file which is a web page. You can read your conversation offline with this file.
 
 ### History Page
 From v1.6.5 onwards, chat1 & chat2 are combined.
@@ -53,8 +55,6 @@ Similar to "Download as Tavern chat". You can download all chats in one go in Ta
 You can drag the button by its appendage on the left. If tapped 3 times consecutively on the appendage, it will remove the button until page reload.
 ###### Passive
 Shows up to 999 chats in "View Chat Histories". You can download it all. The limit they put was originally 50.
-###### JSON_to_ReadOffline.html
-You can download this file individually. This can convert your existing .json character/history dumps into readable format, similar to "Download to read offline". Open this file, upload your dump in the input at middle-top of the page, that's all.
 
 # Screenshot
 ![Preview](https://github.com/irsat000/CAI-Tools/assets/38238671/ff724f87-abb1-4d47-86a8-409d13cdea67)

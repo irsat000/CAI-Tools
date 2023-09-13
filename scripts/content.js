@@ -648,6 +648,8 @@
         const ChatObject = {
             internal: [],
             visible: [],
+            data: [],
+            data_visible: [],
         };
 
         let currentPair = [];
@@ -665,6 +667,8 @@
                 let mergedMessage = ChatObject.internal[dataLength][pairLength] += "\n\n" + msg.message;
                 ChatObject.internal[dataLength][pairLength] = mergedMessage;
                 ChatObject.visible[dataLength][pairLength] = mergedMessage;
+                ChatObject.data[dataLength][pairLength] = mergedMessage;
+                ChatObject.data_visible[dataLength][pairLength] = mergedMessage;
                 return;
             }
 
@@ -675,6 +679,8 @@
             if (currentPair.length === 2) {
                 ChatObject.internal.push(currentPair);
                 ChatObject.visible.push(currentPair);
+                ChatObject.data.push(currentPair);
+                ChatObject.data_visible.push(currentPair);
                 currentPair = [];
             }
 
@@ -942,12 +948,13 @@
             .then((data) => {
                 console.log(data);
                 //Permission check
-                if (data.character.length === 0) {
+                if (!data.character || data.character.length === 0) {
                     // No permission because it's someone else's character
                     // /chat/character/info/ instead of /chat/character/ fixes that
                     const newUrl = "https://" + getMembership() + ".character.ai/chat/character/info/";
                     // To guarantee running once
                     if (fetchUrl != newUrl) {
+                        console.log("Trying other character fetch method...");
                         fetchCharacterInfo(newUrl, AccessToken, payload, downloadType);
                     }
                     return;
@@ -1157,7 +1164,7 @@
                         throw new Error(`Failed to fetch data. Status: ${response.status}`);
                     }
                     const data = await response.json();
-                    const avatarPath = identity === 'char' ? data.character.avatar_file_name : data.user.user.account.avatar_file_name;
+                    const avatarPath = identity === 'char' ? data.character?.avatar_file_name ?? null : data.user?.user?.account?.avatar_file_name ?? null;
 
                     if (avatarPath == null || avatarPath == "") {
                         resolve(null);

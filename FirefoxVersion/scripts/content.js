@@ -648,16 +648,17 @@
         const ChatObject = {
             internal: [],
             visible: [],
+            data: [],
+            data_visible: [],
         };
 
         let currentPair = [];
         let prevName = null;
 
-        // First pair's first message will be this and "" in visible
-        // First pair's second message is the starting message of the character
-        currentPair.push('<|BEGIN-VISIBLE-CHAT|>');
-
-        chatData.forEach((msg, index) => {
+        // User's message first
+        chatData.shift();
+        
+        chatData.forEach((msg) => {
             // If the current messager is the same as the previous one, merge and skip this iteration
             if (msg.name === prevName) {
                 const dataLength = ChatObject.internal.length - 1;
@@ -666,6 +667,8 @@
                 let mergedMessage = ChatObject.internal[dataLength][pairLength] += "\n\n" + msg.message;
                 ChatObject.internal[dataLength][pairLength] = mergedMessage;
                 ChatObject.visible[dataLength][pairLength] = mergedMessage;
+                ChatObject.data[dataLength][pairLength] = mergedMessage;
+                ChatObject.data_visible[dataLength][pairLength] = mergedMessage;
                 return;
             }
 
@@ -674,9 +677,10 @@
 
             // If currentPair has 2 messages, push to ChatObject and reset
             if (currentPair.length === 2) {
-                const modifiedPair = index === 0 ? [""].concat(currentPair.slice(1)) : currentPair;
                 ChatObject.internal.push(currentPair);
-                ChatObject.visible.push(modifiedPair);
+                ChatObject.visible.push(currentPair);
+                ChatObject.data.push(currentPair);
+                ChatObject.data_visible.push(currentPair);
                 currentPair = [];
             }
 
@@ -823,15 +827,6 @@
             history: offlineHistory
         }
 
-        /*
-        const Data_FinalForm = JSON.stringify(finalData);
-        const blob = new Blob([Data_FinalForm], { type: 'text/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${character_name.replaceAll(' ', '_')}_history.json`;
-        link.click();
-        */
         var fileUrl = extAPI.runtime.getURL('ReadOffline.html');
         var xhr = new XMLHttpRequest();
         xhr.open('GET', fileUrl, true);
@@ -953,12 +948,13 @@
             .then((data) => {
                 console.log(data);
                 //Permission check
-                if (data.character.length === 0) {
+                if (!data.character || data.character.length === 0) {
                     // No permission because it's someone else's character
                     // /chat/character/info/ instead of /chat/character/ fixes that
                     const newUrl = "https://" + getMembership() + ".character.ai/chat/character/info/";
                     // To guarantee running once
                     if (fetchUrl != newUrl) {
+                        console.log("Trying other character fetch method...");
                         fetchCharacterInfo(newUrl, AccessToken, payload, downloadType);
                     }
                     return;
@@ -1168,7 +1164,7 @@
                         throw new Error(`Failed to fetch data. Status: ${response.status}`);
                     }
                     const data = await response.json();
-                    const avatarPath = identity === 'char' ? data.character.avatar_file_name : data.user.user.account.avatar_file_name;
+                    const avatarPath = identity === 'char' ? data.character?.avatar_file_name ?? null : data.user?.user?.account?.avatar_file_name ?? null;
 
                     if (avatarPath == null || avatarPath == "") {
                         resolve(null);

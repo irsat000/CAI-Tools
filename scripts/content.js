@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.7.0";
+    const extVersion = "1.7.1";
 
     const metadata = {
         version: 1,

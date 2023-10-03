@@ -61,6 +61,3 @@ Shows up to 999 chats in "View Chat Histories". You can download it all. The lim
 
 # Contributors
 See the list of [contributors.](AUTHORS)
-
-# License
-This project is licensed under the GNU GENERAL PUBLIC LICENSE - see the [LICENSE](LICENSE) file for details.

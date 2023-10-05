@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.7.1";
+    const extVersion = "1.7.2";
 
     const metadata = {
         version: 1,
@@ -624,11 +624,9 @@
             return;
         }
 
-        let charName = chatData[0].name;
-
         switch (args.downloadType) {
             case "cai_offline_read":
-                Download_OfflineReading(chatData, charName);
+                Download_OfflineReading(chatData);
                 break;
             case "oobabooga":
                 DownloadConversation_Oobabooga(chatData, charName);
@@ -657,7 +655,7 @@
 
         // User's message first
         chatData.shift();
-        
+
         chatData.forEach((msg) => {
             // If the current messager is the same as the previous one, merge and skip this iteration
             if (msg.name === prevName) {
@@ -779,12 +777,10 @@
             return;
         }
 
-        const character_name = historyData[0][0].name;
-
         const dtype = args.downloadType;
         switch (dtype) {
             case "cai_offline_read":
-                Download_OfflineReading(historyData, character_name);
+                Download_OfflineReading(historyData);
                 break;
             case "example_chat":
                 DownloadHistory_ExampleChat(historyData, character_name);
@@ -798,8 +794,12 @@
     }
 
 
-    async function Download_OfflineReading(data, character_name) {
-        const username = document.querySelector(`meta[cait_user]`)?.getAttribute('cait_user') || 'Guest';
+    async function Download_OfflineReading(data) {
+        //const username = document.querySelector(`meta[cait_user]`)?.getAttribute('cait_user') || 'Guest';
+        let default_character_name = data[0].name ?? data[data.length - 1][0].name ?? data[0][0].name;
+        if (!default_character_name) {
+            alert("Couldn't get the character's name;")
+        }
         const charPicture = await getAvatar('80', 'char');
         const userPicture = await getAvatar('80', 'user');
 
@@ -808,21 +808,20 @@
         if (Array.isArray(data[0])) {
             // This is from history
             data.forEach(chat => {
+                const current_character_name = chat[0].name;
                 const chatTemp = [];
-                chat.map(msg => chatTemp.push({ isUser: msg.name != character_name, message: encodeURIComponent(msg.message) }));
+                chat.forEach(msg => chatTemp.push({ isUser: msg.name != current_character_name, name: msg.name, message: encodeURIComponent(msg.message) }));
                 offlineHistory.push(chatTemp);
             });
         } else {
             // This is from conversation
             const chatTemp = [];
-            data.map(obj => chatTemp.push({ isUser: obj.name != character_name, message: encodeURIComponent(obj.message) }));
+            data.forEach(msg => chatTemp.push({ isUser: msg.name != default_character_name, name: msg.name, message: encodeURIComponent(msg.message) }));
             offlineHistory.push(chatTemp);
         }
 
         const finalData = {
-            charName: character_name,
             charPic: charPicture,
-            userName: username,
             userPic: userPicture,
             history: offlineHistory
         }
@@ -843,9 +842,7 @@
 
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = character_name != null
-                    ? character_name.replaceAll(' ', '_') + '_Offline.html'
-                    : 'CAI_ReadOffline.html';
+                link.download = default_character_name.replaceAll(' ', '_') + '_Offline.html';
                 link.click();
             }
         };

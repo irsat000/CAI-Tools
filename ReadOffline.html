@@ -611,7 +611,7 @@
                     clone.querySelector('.avatar-wrap').appendChild(avatar);
 
                     // Write content
-                    clone.querySelector('.chat_content-wrap h5').textContent = msg.isUser ? historyData.userName : historyData.charName;
+                    clone.querySelector('.chat_content-wrap h5').textContent = msg.name;
                     clone.querySelector('.message-wrap p').innerHTML = parseMessageText(decodeURIComponent(msg.message));
                     chat.appendChild(clone);
                 });

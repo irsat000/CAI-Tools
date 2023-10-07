@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.7.2";
+    const extVersion = "1.7.3";
 
     const metadata = {
         version: 1,
@@ -624,17 +624,31 @@
             return;
         }
 
+        const charName = chatData[0].name ?? "NULL!";
+
         switch (args.downloadType) {
             case "cai_offline_read":
                 Download_OfflineReading(chatData);
                 break;
             case "oobabooga":
+                if (charName === "NULL!") {
+                    alert("Character name couldn't be found!");
+                    return;
+                }
                 DownloadConversation_Oobabooga(chatData, charName);
                 break;
             case "tavern":
+                if (charName === "NULL!") {
+                    alert("Character name couldn't be found!");
+                    return;
+                }
                 DownloadConversation_Tavern(chatData, charName);
                 break;
             case "example_chat":
+                if (charName === "NULL!") {
+                    alert("Character name couldn't be found!");
+                    return;
+                }
                 DownloadConversation_ChatExample(chatData, charName);
                 break;
             default:
@@ -777,16 +791,26 @@
             return;
         }
 
+        const charName = historyData[0]?.[0]?.name ?? "NULL!";
+
         const dtype = args.downloadType;
         switch (dtype) {
             case "cai_offline_read":
                 Download_OfflineReading(historyData);
                 break;
             case "example_chat":
-                DownloadHistory_ExampleChat(historyData, character_name);
+                if (charName === "NULL!") {
+                    alert("Character name couldn't be found!");
+                    return;
+                }
+                DownloadHistory_ExampleChat(historyData, charName);
                 break;
             case "cai_tavern_history":
-                DownloadHistory_TavernHistory(historyData, character_name);
+                if (charName === "NULL!") {
+                    alert("Character name couldn't be found!");
+                    return;
+                }
+                DownloadHistory_TavernHistory(historyData, charName);
                 break;
             default:
                 break;

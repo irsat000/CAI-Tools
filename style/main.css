@@ -244,10 +244,107 @@ a[href="#-"] {
     max-height: 90vh;
     overflow-y: auto;
     overscroll-behavior: none;
+    padding-bottom: 20px;
 }
 
+.cait_memory_manager label.mm_status {
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
 
+.cait_memory_manager input[name="cait_mm_active"] {
+    width: 1.1rem;
+    height: 1.1rem;
+}
 
+.cait_memory_manager span.reminder-wrap {
+    margin-bottom: 10px;
+}
+
+.cait_memory_manager span.reminder-wrap input[name="remind_frequency"] {
+    padding: 3px 4px;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    width: 2rem;
+    text-align: center;
+    margin: 0 6px;
+}
+
+.cait_memory_manager textarea.mm_new_memory {
+    min-height: 200px;
+    min-height: 100px;
+    font-size: 1rem;
+    margin-bottom: 8px;
+    padding: 6px;
+}
+
+.cait_memory_manager button.add_new_memory {
+    align-self: center;
+    padding: 4px 8px;
+    background-color: #2577a3;
+    color: #ffffff;
+    border-radius: 4px;
+    border: unset;
+    margin-bottom: 16px;
+}
+
+.mm-current_memory_list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+.mm-current_memory_list li {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.mm-current_memory_list li .memory {
+    border: 1px solid #cccccc;
+    padding: 6px;
+    border-radius: 8px 8px 8px 0;
+    overflow-y: auto;
+    min-height: 200px;
+    max-height: 350px;
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.mm-current_memory_list li .delete_memory {
+    padding: 4px 8px;
+    color: #ffffff;
+    border-radius: 0 0 4px 4px;
+    background-color: #a32f25;
+    border: unset;
+}
+
+.cait_memory_manager .mm-action-cont {
+    display: flex;
+    gap: 30px;
+    align-self: center;
+}
+
+.cait_memory_manager .mm-action-cont button {
+    padding: 4px 8px;
+    color: #ffffff;
+    border-radius: 4px;
+    border: unset;
+}
+
+.cait_memory_manager .mm-action-cont .cancel {
+    background-color: #a32f25;
+}
+
+.cait_memory_manager .mm-action-cont .save {
+    background-color: #36a325;
+}
 
 
 
@@ -270,5 +367,19 @@ a[href="#-"] {
 
     .cait_memory_manager {
         width: 60%;
+    }
+
+    .cait_memory_manager textarea.mm_new_memory {
+        min-height: 100px;
+    }
+
+    .mm-current_memory_list li {
+        padding: 0 20px;
+    }
+
+    .mm-current_memory_list li .memory {
+        padding: 8px 14px;
+        min-height: 100px;
+        max-height: 180px;
     }
 }

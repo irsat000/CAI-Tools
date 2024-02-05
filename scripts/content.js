@@ -435,7 +435,30 @@
                         <h4>Memory Manager</h4><span class="caitmm-close">x</span>
                     </div>
                     <div class="caitmm-body">
-                    
+                        <label class="mm_status">Active <input type="checkbox" name="cait_mm_active" unchecked /></label>
+                        <span class="reminder-wrap">
+                            Remind every <input type="text" name="remind_frequency" value="5" /> messages
+                        </span>
+                        <textarea class="mm_new_memory" name="new_memory" placeholder="New memory"></textarea>
+                        <button type="button" class="add_new_memory">Add New</button>
+                        <ul class="mm-current_memory_list">
+                            <li>
+                                <textarea class="memory">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Commodi quisquam nobis assumenda eaque adipisci quae odio quos velit facere odit eius cum, libero dolores iusto enim? Dolorum libero quidem tenetur?</textarea>
+                                <button type="button" class="delete_memory">Delete</button>
+                            </li>
+                            <li>
+                                <textarea class="memory">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Expedita unde neque, magni ducimus temporibus pariatur maiores eaque, porro, error aspernatur fuga. Iure ipsam praesentium fugiat consequuntur dolorem autem laborum nemo!</textarea>
+                                <button type="button" class="delete_memory">Delete</button>
+                            </li>
+                            <li>
+                                <textarea class="memory">Lorem ipsum dolor sit amet consectetur adipisicing elit. Sequi, magni animi iusto velit numquam debitis in iure cupiditate, dolorem quis dolorum doloremque quaerat repellendus, a deleniti ullam tenetur minima pariatur!</textarea>
+                                <button type="button" class="delete_memory">Delete</button>
+                            </li>
+                        </ul>
+                        <div class="mm-action-cont">
+                            <button type="button" class="cancel">Cancel</button>
+                            <button type="button" class="save">Save</button>
+                        </div>
                     </div>
                 </div>
             </div>

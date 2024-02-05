@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.7.3";
+    const extVersion = "1.8.0";
 
     const metadata = {
         version: 1,
@@ -17,7 +17,7 @@
         }
     };
 
-
+    // AJAX hook
     const xhook_lib__url = extAPI.runtime.getURL("scripts/xhook.min.js");
     const xhookScript = document.createElement("script");
     xhookScript.crossOrigin = "anonymous";
@@ -26,8 +26,18 @@
         initialize_options_DOM(window.location.pathname);
     };
     xhookScript.src = xhook_lib__url;
+    // Web socket hook
+    const wsHook_lib__url = extAPI.runtime.getURL("scripts/wsHook.js");
+    const wsHookScript = document.createElement("script");
+    wsHookScript.crossOrigin = "anonymous";
+    wsHookScript.id = "wsHook";
+    wsHookScript.onload = function () {
+    };
+    wsHookScript.src = wsHook_lib__url;
+    // Insert hooks
     const firstScript = document.getElementsByTagName("script")[0];
     firstScript.parentNode.insertBefore(xhookScript, firstScript);
+    firstScript.parentNode.insertBefore(wsHookScript, firstScript);
 
 
     // A function to handle mutations
@@ -78,6 +88,7 @@
 
     function cleanDOM() {
         let container = document.querySelector('.apppage');
+        if (!container) return;
         container.querySelectorAll('[data-tool="cai_tools"]').forEach(element => {
             element.remove();
         });
@@ -388,6 +399,9 @@
                     </div>
                     <div class="cait-body">
                         <span class="cait_warning"></span>
+                        <ul>
+                            <li data-cait_type='memory_manager'>Memory Manager (NEW!)</li>
+                        </ul>
                         <h6>Character</h6>
                         <ul>
                             <li data-cait_type='character_hybrid'>Download Character (json)</li>
@@ -412,6 +426,16 @@
                     </div>
                     <div class="caits-body">
                         <pre id="cait_jsonViewer"></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="cait_memory_manager-cont" data-tool="cai_tools">
+                <div class="cait_memory_manager">
+                    <div class="caitmm_header">
+                        <h4>Memory Manager</h4><span class="caitmm-close">x</span>
+                    </div>
+                    <div class="caitmm-body">
+                    
                     </div>
                 </div>
             </div>
@@ -467,6 +491,17 @@
             if (target.classList.contains('cait_settings-cont') || target.classList.contains('caits-close')) {
                 close_caitSettingsModal(container);
             }
+        });
+        container.querySelector('.cait_memory_manager-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cait_memory_manager-cont') || target.classList.contains('caitmm-close')) {
+                close_caitMemoryManagerModal(container);
+            }
+        });
+
+        container.querySelector('.cai_tools-cont [data-cait_type="memory_manager"]').addEventListener('click', () => {
+            MemoryManager();
+            close_caiToolsModal(container);
         });
 
         container.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
@@ -608,9 +643,20 @@
     function close_caitSettingsModal(container) {
         container.querySelector('.cait_settings-cont').classList.remove('active');
     }
+    function close_caitMemoryManagerModal(container) {
+        container.querySelector('.cait_memory_manager-cont').classList.remove('active');
+    }
     // CAI Tools - DOM - END
 
 
+
+    // MEMORY MANAGER
+    function MemoryManager() {
+        const container = document.querySelector('.cait_memory_manager-cont');
+
+        container.classList.add('active');
+    }
+    // MEMORY MANAGER - END
 
 
 
@@ -624,7 +670,7 @@
             return;
         }
 
-        const charName = chatData[0].name ?? "NULL!";
+        const charName = chatData[0]?.name ?? "NULL!";
 
         switch (args.downloadType) {
             case "cai_offline_read":
@@ -820,9 +866,9 @@
 
     async function Download_OfflineReading(data) {
         //const username = document.querySelector(`meta[cait_user]`)?.getAttribute('cait_user') || 'Guest';
-        let default_character_name = data[0].name ?? data[data.length - 1][0].name ?? data[0][0].name;
+        let default_character_name = data[0]?.name ?? data[data.length - 1]?.[0]?.name ?? data[0]?.[0]?.name;
         if (!default_character_name) {
-            alert("Couldn't get the character's name;")
+            alert("Couldn't get the character's name");
         }
         const charPicture = await getAvatar('80', 'char');
         const userPicture = await getAvatar('80', 'user');
@@ -891,9 +937,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = character_name != null
-            ? character_name.replaceAll(' ', '_') + '_Example.txt'
-            : 'ExampleChat.txt';
+        link.download = character_name.replaceAll(' ', '_') + '_Example.txt';
         link.click();
     }
 

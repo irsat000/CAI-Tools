@@ -1,3 +1,11 @@
+p:has(a[href="#-"]) {
+    display: none;
+}
+
+a[href="#-"] {
+    display: none;
+}
+
 .cait_button-cont {
     display: flex;
     flex-direction: row;
@@ -48,8 +56,17 @@
     opacity: 1;
 }
 
+
+
+
+
+
+
+
+
 .cai_tools-cont,
-.cait_settings-cont {
+.cait_settings-cont,
+.cait_memory_manager-cont {
     display: none;
     /*flex*/
     z-index: 999;
@@ -64,37 +81,14 @@
 }
 
 .cai_tools-cont.active,
-.cait_settings-cont.active {
+.cait_settings-cont.active,
+.cait_memory_manager-cont.active {
     display: flex;
-}
-
-.cait_settings {
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    border: 1px solid #676767;
-    background-color: #272727;
-    color: #ffffff;
-    border-radius: 8px;
-    width: 96%;
-    max-height: 96vh;
-    overflow-y: auto;
-}
-
-.cai_tools {
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    border: 1px solid #676767;
-    background-color: #272727;
-    color: #ffffff;
-    border-radius: 8px;
-    width: 96%;
-    max-width: 280px;
 }
 
 .cai_tools .cait-header,
-.cait_settings .caits_header {
+.cait_settings .caits_header,
+.cait_memory_manager .caitmm_header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -102,14 +96,16 @@
 }
 
 .cai_tools .cait-header h4,
-.cait_settings .caits_header h4 {
+.cait_settings .caits_header h4,
+.cait_memory_manager .caitmm_header h4 {
     font-size: 18px;
     margin: 0;
     padding: 0;
 }
 
 .cai_tools .cait-header span,
-.cait_settings .caits_header span {
+.cait_settings .caits_header span,
+.cait_memory_manager .caitmm_header span {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -123,24 +119,37 @@
 }
 
 .cai_tools .cait-header span:hover,
-.cait_settings .caits_header span:hover {
+.cait_settings .caits_header span:hover,
+.cait_memory_manager .caitmm_header span:hover {
     background-color: #3b3b3b;
 }
 
 .cai_tools .cait-body,
-.cait_settings .caits-body {
+.cait_settings .caits-body,
+.cait_memory_manager .caitmm-body {
     display: flex;
     flex-direction: column;
     gap: 5px;
     padding: 10px 14px;
 }
 
-.cait_settings pre {
-    white-space: pre-wrap;
-}
 
-.cait_settings pre .cait_jv_prop {
-    color: #c41313;
+
+
+
+
+
+
+.cai_tools {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    border: 1px solid #676767;
+    background-color: #272727;
+    color: #ffffff;
+    border-radius: 8px;
+    width: 96%;
+    max-width: 280px;
 }
 
 .cai_tools .cait-body span.cait_warning {
@@ -193,6 +202,59 @@
     background-color: #3b3b3b;
 }
 
+
+
+
+
+
+.cait_settings {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    border: 1px solid #676767;
+    background-color: #272727;
+    color: #ffffff;
+    border-radius: 8px;
+    width: 96%;
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior: none;
+}
+
+.cait_settings pre {
+    white-space: pre-wrap;
+}
+
+.cait_settings pre .cait_jv_prop {
+    color: #c41313;
+}
+
+
+
+
+.cait_memory_manager {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    border: 1px solid #676767;
+    background-color: #272727;
+    color: #ffffff;
+    border-radius: 8px;
+    width: 96%;
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior: none;
+}
+
+
+
+
+
+
+
+
+
+
 @media (min-width: 768px) {
     .cai_tools-btn {
         opacity: 0.6;
@@ -204,5 +266,9 @@
 
     .cait_settings {
         width: 80%;
+    }
+
+    .cait_memory_manager {
+        width: 60%;
     }
 }

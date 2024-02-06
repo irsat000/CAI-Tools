@@ -448,7 +448,7 @@
                     <div class="caitmm-body">
                         <label class="mm_status">Active <input type="checkbox" name="cait_mm_active" unchecked /></label>
                         <span class="reminder-wrap">
-                            Remind every <input type="number" name="remind_frequency" value="5" /> messages
+                            Remind every <input type="number" name="remind_frequency" value="5" min="0" max="100" /> messages
                         </span>
                         <textarea class="mm_new_memory" name="new_memory" placeholder="New memory (Line breaks are not recommended but will work)"></textarea>
                         <button type="button" class="add_new_memory">Add New</button>
@@ -719,12 +719,14 @@
                 mmActive: false,
                 mmRemindFrequency: 5,
                 mmList: [
+                    /* Example
                     {
                         char: "ZYoXQIapG7SNgYRl6lKFbFhsU9IF5hWNBgP2DtT7GKk",
+                        timesSkipped: 0,
                         list: [
                             "ZYoXQIapG7SNgYRl6lKFbFhsU9IF5hWNBgP2DtT7GKk Hello, this is the id of this characters. Be careful."
                         ]
-                    }
+                    }*/
                 ]
             }
 
@@ -743,7 +745,7 @@
             // Import settings
             if (container.dataset.import_needed === "true") {
                 mmActive.checked = settings.mmActive;
-                remindFrequency.value = settings.mmRemindFrequency > 0 ? settings.mmRemindFrequency : 5;
+                remindFrequency.value = settings.mmRemindFrequency >= 0 ? settings.mmRemindFrequency : 5;
                 // Import existing memory list and some error handling
                 if (!settings.mmList) settings.mmList = [];
                 const charId = getCharId();
@@ -756,6 +758,7 @@
                 } else {
                     settings.mmList.push({
                         char: charId,
+                        timesSkipped: 0,
                         list: []
                     });
                 }
@@ -782,7 +785,7 @@
                 try {
                     // Save the options
                     settings.mmActive = mmActive.checked;
-                    settings.mmRemindFrequency = +remindFrequency.value > 0 && +remindFrequency.value < 100 ? +remindFrequency.value : 5;
+                    settings.mmRemindFrequency = +remindFrequency.value >= 0 && +remindFrequency.value < 100 ? +remindFrequency.value : 5;
                     // Choose the specific character from the settings
                     const charId = getCharId();
                     if (!charId) throw "Char ID is undefined";

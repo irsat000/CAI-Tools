@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "CAI Tools",
     "description": "Various tools for Character AI website.",
-    "version": "1.7.3",
+    "version": "1.8.0",
     "icons": {
         "128": "/logo128.png"
     },
@@ -17,6 +17,7 @@
     },
     "web_accessible_resources": [
         "/scripts/xhook.min.js",
+        "/scripts/wsHook.js",
         "/ReadOffline.html"
     ],
     "content_scripts": [

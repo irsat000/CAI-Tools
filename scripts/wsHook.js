@@ -109,12 +109,91 @@ var wsHook = {};
 wsHook.before = function (data, url, wsObject) {
     const updated = JSON.parse(data);
     if (updated.command === "create_and_generate_turn") {
-        updated.payload.tts_enabled = true;
-
-        const memory = `[Memory](#- "Say cheese if you can read this!")\n\n`;
-        const message = updated.payload.turn.candidates[0].raw_content;
-        updated.payload.turn.candidates[0].raw_content = memory + memory + memory + message;
-
-        return JSON.stringify(updated);
+        // If memory manager conditions are met, modify the message and send it
+        if (checkMemoryManager()) {
+            const message = updated.payload.turn.candidates[0].raw_content;
+            updated.payload.turn.candidates[0].raw_content = addMemoryToMessage(message);
+            return JSON.stringify(updated);
+        }
     }
+}
+
+
+
+
+function checkMemoryManager(type) {
+    try {
+        // Check char id
+        const charId = getCharId();
+        if (!charId) {
+            throw "Char ID couldn't be found at checkMemoryManager() function";
+        }
+        // No memory settings
+        let caiToolsSettings = JSON.parse(localStorage.getItem('cai_tools'));
+        if (!caiToolsSettings || !caiToolsSettings.memoryManager)
+            return false;
+        // This char's settings are not specified
+        const charMemories = caiToolsSettings.memoryManager.mmList.find(obj => obj.char === charId);
+        if (!charMemories || !charMemories.list.length === 0)
+            return false;
+
+        // Different actions
+        if (type === "getList") {
+            // Get memory list of the character
+            return charMemories.list;
+        }
+        else {
+            // Checks memory manager active status
+            if (!caiToolsSettings.memoryManager.mmActive) {
+                return false;
+            }
+            // Check skips
+            const timesSkipped = charMemories.timesSkipped ?? 0;
+            console.log("Memory manager frequency: ", caiToolsSettings.memoryManager.mmRemindFrequency, "Times skipped(excluding this):", timesSkipped);
+            if (caiToolsSettings.memoryManager.mmRemindFrequency > 0 && (!timesSkipped || timesSkipped < caiToolsSettings.memoryManager.mmRemindFrequency)) {
+                // Increase times skipped
+                charMemories.timesSkipped = timesSkipped + 1;
+                // Save to local storage for persistent data
+                localStorage.setItem('cai_tools', JSON.stringify(caiToolsSettings));
+                return false;
+            }
+            // Reset times skipped because now we are adding memories
+            charMemories.timesSkipped = 0;
+            // Save to local storage for persistent data
+            localStorage.setItem('cai_tools', JSON.stringify(caiToolsSettings));
+            console.log("Memory added, skip counter reset.");
+            return true;
+        }
+    } catch (error) {
+        console.log("Screenshot this error: " + error);
+        return false;
+    }
+}
+
+function addMemoryToMessage(original) {
+    try {
+        // Change commas and line breaks to prevent visual errors
+        function formatMemory(memory) {
+            return memory.replace(/"/g, '”').replace(/\n+/g, ' — ');
+        }
+        // Parse cai tools settings from storage
+        let memoryPart = "";
+        const charMemories = checkMemoryManager("getList");
+        // Push the memories
+        charMemories.forEach(memory => {
+            memoryPart += `[-](#- "Memory refresh: ${formatMemory(memory)}")\n`;
+        });
+        // Merge and send
+        return memoryPart + original;
+    } catch (error) {
+        console.log("Screenshot this error: " + error);
+        return original;
+    }
+}
+
+function getCharId() {
+    const url = new URL(window.location.href);
+    const searchParams = new URLSearchParams(url.search);
+    const charId = searchParams.get('char');
+    return charId;
 }

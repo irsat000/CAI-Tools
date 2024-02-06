@@ -369,7 +369,7 @@
                 }
             }, 1000);
         }
-        else if (path === '/chat' || path === '/chat2') {
+        else if ((path === '/chat' || path === '/chat2') && getCharId) {
             const intervalId = setInterval(() => {
                 let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
                 let container = document.querySelector('.apppage');
@@ -437,23 +437,11 @@
                     <div class="caitmm-body">
                         <label class="mm_status">Active <input type="checkbox" name="cait_mm_active" unchecked /></label>
                         <span class="reminder-wrap">
-                            Remind every <input type="text" name="remind_frequency" value="5" /> messages
+                            Remind every <input type="number" name="remind_frequency" value="5" /> messages
                         </span>
                         <textarea class="mm_new_memory" name="new_memory" placeholder="New memory"></textarea>
                         <button type="button" class="add_new_memory">Add New</button>
                         <ul class="mm-current_memory_list">
-                            <li>
-                                <textarea class="memory">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Commodi quisquam nobis assumenda eaque adipisci quae odio quos velit facere odit eius cum, libero dolores iusto enim? Dolorum libero quidem tenetur?</textarea>
-                                <button type="button" class="delete_memory">Delete</button>
-                            </li>
-                            <li>
-                                <textarea class="memory">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Expedita unde neque, magni ducimus temporibus pariatur maiores eaque, porro, error aspernatur fuga. Iure ipsam praesentium fugiat consequuntur dolorem autem laborum nemo!</textarea>
-                                <button type="button" class="delete_memory">Delete</button>
-                            </li>
-                            <li>
-                                <textarea class="memory">Lorem ipsum dolor sit amet consectetur adipisicing elit. Sequi, magni animi iusto velit numquam debitis in iure cupiditate, dolorem quis dolorum doloremque quaerat repellendus, a deleniti ullam tenetur minima pariatur!</textarea>
-                                <button type="button" class="delete_memory">Delete</button>
-                            </li>
                         </ul>
                         <div class="mm-action-cont">
                             <button type="button" class="cancel">Cancel</button>
@@ -515,11 +503,19 @@
                 close_caitSettingsModal(container);
             }
         });
-        container.querySelector('.cait_memory_manager-cont').addEventListener('click', (event) => {
+        container.querySelector('.cait_memory_manager-cont').addEventListener('mousedown', (event) => {
             const target = event.target;
             if (target.classList.contains('cait_memory_manager-cont') || target.classList.contains('caitmm-close')) {
-                close_caitMemoryManagerModal(container);
+                setTimeout(() => {
+                    close_caitMemoryManagerModal(container);
+                    // To prevent further click by accident, mousedown immediately runs, not when mouse is lifted
+                }, 200);
             }
+
+            /* Alternative to accidents
+            container.querySelector('.caitmm-close').addEventListener('click', () => {
+                close_caitMemoryManagerModal(container);
+            });*/
         });
 
         container.querySelector('.cai_tools-cont [data-cait_type="memory_manager"]').addEventListener('click', () => {
@@ -675,9 +671,118 @@
 
     // MEMORY MANAGER
     function MemoryManager() {
-        const container = document.querySelector('.cait_memory_manager-cont');
+        try {
+            console.log("Memory Manager ran");
+            const container = document.querySelector('.cait_memory_manager-cont');
+            // Memory manager settings
+            const mmActive = container.querySelector('input[name="cait_mm_active"]');
+            const remindFrequency = container.querySelector('input[name="remind_frequency"]');
+            // Memory managing
+            const newMemoryField = container.querySelector('.mm_new_memory');
+            const addNewMemoryBtn = container.querySelector('.add_new_memory');
+            const currentMemoryList = container.querySelector('.mm-current_memory_list');
+            // Save / Cancel
+            const cancelPlan = container.querySelector('.cancel');
+            const savePlan = container.querySelector('.save');
+            // Push to memory list
+            const pushToMemoryList = (memory) => {
+                const li = document.createElement('li');
+                const textarea = document.createElement('textarea');
+                textarea.classList.add('memory');
+                textarea.value = memory;
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = "button";
+                deleteBtn.classList.add('delete_memory');
+                deleteBtn.textContent = "Delete";
+                deleteBtn.addEventListener('click', () => li.remove())
+                li.appendChild(textarea);
+                li.appendChild(deleteBtn);
+                currentMemoryList.appendChild(li);
+            }
 
-        container.classList.add('active');
+            // Get settings from storage
+            const defaultSettings = {
+                mmActive: false,
+                mmRemindFrequency: 5,
+                mmList: [
+                    {
+                        char: "ZYoXQIapG7SNgYRl6lKFbFhsU9IF5hWNBgP2DtT7GKk",
+                        list: [
+                            "ZYoXQIapG7SNgYRl6lKFbFhsU9IF5hWNBgP2DtT7GKk Hello, this is the id of this characters. Be careful."
+                        ]
+                    }
+                ]
+            }
+
+            // Initialize settings
+            let caiToolsSettings = JSON.parse(localStorage.getItem('cai_tools'));
+            if (!caiToolsSettings) {
+                caiToolsSettings = {
+                    memoryManager: defaultSettings
+                }
+            }
+            if (!caiToolsSettings.memoryManager) {
+                caiToolsSettings.memoryManager = defaultSettings;
+            }
+            const settings = caiToolsSettings.memoryManager;
+
+            // Import settings
+            mmActive.checked = settings.mmActive;
+            remindFrequency.value = settings.mmRemindFrequency > 0 ? settings.mmRemindFrequency : 5;
+            // Import existing memory list and some error handling
+            if (!settings.mmList) settings.mmList = [];
+            const charId = getCharId();
+            if (!charId) throw "Char ID is undefined";
+            const charSettings = settings.mmList.find(obj => obj.char === charId);
+            if (charSettings) {
+                // Clean up and append
+                currentMemoryList.innerHTML = "";
+                charSettings.list.forEach(pushToMemoryList);
+            } else {
+                settings.mmList.push({
+                    char: charId,
+                    list: []
+                });
+            }
+
+            // Add new memory
+            addNewMemoryBtn.addEventListener('click', () => {
+                if (newMemoryField.value.trim().length === 0) return;
+                pushToMemoryList(newMemoryField.value.trim());
+                newMemoryField.value = "";
+            });
+
+            // Save
+            savePlan.addEventListener('click', () => {
+                try {
+                    settings.mmActive = mmActive.checked;
+                    settings.mmRemindFrequency = +remindFrequency.value > 0 && +remindFrequency.value < 100 ? +remindFrequency.value : 5;
+
+                    const charId = getCharId();
+                    if (!charId) throw "Char ID is undefined";
+                    const charSettings = settings.mmList.find(obj => obj.char === charId);
+                    charSettings.list = [];
+                    [...currentMemoryList.children].forEach(li => {
+                        const memory = li.querySelector('textarea').value.trim();
+                        if (memory.length > 0) {
+                            const charSettings = settings.mmList.find(obj => obj.char === charId);
+                            charSettings.list.push(memory);
+                        }
+                    });
+
+                    localStorage.setItem('cai_tools', JSON.stringify(caiToolsSettings));
+                    close_caitMemoryManagerModal(container);
+                } catch (error) {
+                    alert("Couldn't be saved, please report on github if you don't know the reason");
+                }
+            });
+
+            // Open modal
+            container.classList.add('active');
+        } catch (error) {
+            console.log("Screenshot this error please; ", error);
+            alert("Memory manager couldn't be opened. Please create an issue in Github with the error in the console. F12 > Console tab")
+        }
     }
     // MEMORY MANAGER - END
 

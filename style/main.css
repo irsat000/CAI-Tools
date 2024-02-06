@@ -267,10 +267,10 @@ a[href="#-"] {
 .cait_memory_manager span.reminder-wrap input[name="remind_frequency"] {
     padding: 3px 4px;
     border-radius: 4px;
-    font-size: 1.1rem;
-    width: 2rem;
     text-align: center;
     margin: 0 6px;
+    width: 50px;
+    font-size: 0.9rem;
 }
 
 .cait_memory_manager textarea.mm_new_memory {

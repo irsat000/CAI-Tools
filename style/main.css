@@ -1,9 +1,13 @@
-p:has(a[href="#-"]) {
+/*p:has(a[href="#-"]) {
     display: none;
 }
 
 a[href="#-"] {
     display: none;
+}*/
+
+a[href="#-"] {
+    text-decoration: none;
 }
 
 .cait_button-cont {

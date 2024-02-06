@@ -376,6 +376,17 @@
                 if (container != null && currentConverExtIdMeta != null) {
                     clearInterval(intervalId);
                     create_options_DOM_Conversation(container, path);
+                    // Memory reveal on click and prevent redirect
+                    container.addEventListener('click', (e) => {
+                        const el = e.target;
+                        if (el.matches('a[href="#-"], a[title]') && el.textContent === "-") {
+                            e.preventDefault();
+                            el.textContent = el.getAttribute('title');
+                            el.dataset.revealed_memory = true;
+                        } else if (el.dataset.revealed_memory) {
+                            e.preventDefault();
+                        }
+                    });
                 }
             }, 1000);
         }
@@ -439,7 +450,7 @@
                         <span class="reminder-wrap">
                             Remind every <input type="number" name="remind_frequency" value="5" /> messages
                         </span>
-                        <textarea class="mm_new_memory" name="new_memory" placeholder="New memory"></textarea>
+                        <textarea class="mm_new_memory" name="new_memory" placeholder="New memory (Line breaks are not recommended but will work)"></textarea>
                         <button type="button" class="add_new_memory">Add New</button>
                         <ul class="mm-current_memory_list">
                         </ul>
@@ -724,7 +735,7 @@
                     memoryManager: defaultSettings
                 }
             }
-            if (!caiToolsSettings.memoryManager) {
+            else if (!caiToolsSettings.memoryManager) {
                 caiToolsSettings.memoryManager = defaultSettings;
             }
             const settings = caiToolsSettings.memoryManager;
@@ -769,13 +780,16 @@
             // Save
             savePlan.addEventListener('click', () => {
                 try {
+                    // Save the options
                     settings.mmActive = mmActive.checked;
                     settings.mmRemindFrequency = +remindFrequency.value > 0 && +remindFrequency.value < 100 ? +remindFrequency.value : 5;
-
+                    // Choose the specific character from the settings
                     const charId = getCharId();
                     if (!charId) throw "Char ID is undefined";
                     const charSettings = settings.mmList.find(obj => obj.char === charId);
+                    // Clean up the memory list
                     charSettings.list = [];
+                    // Save memories from the inputs
                     [...currentMemoryList.children].forEach(li => {
                         const memory = li.querySelector('textarea').value.trim();
                         if (memory.length > 0) {
@@ -783,8 +797,9 @@
                             charSettings.list.push(memory);
                         }
                     });
-
+                    // Save to local storage for persistent data
                     localStorage.setItem('cai_tools', JSON.stringify(caiToolsSettings));
+                    // Close the modal
                     close_caitMemoryManagerModal();
                 } catch (error) {
                     console.log("Screenshot this error please; ", error);

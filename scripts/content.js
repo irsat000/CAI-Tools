@@ -369,7 +369,7 @@
                 }
             }, 1000);
         }
-        else if ((path === '/chat' || path === '/chat2') && getCharId) {
+        else if ((path === '/chat' || path === '/chat2') && getCharId()) {
             const intervalId = setInterval(() => {
                 let currentConverExtIdMeta = document.querySelector(`meta[cai_currentConverExtId]`);
                 let container = document.querySelector('.apppage');
@@ -429,7 +429,7 @@
                     </div>
                 </div>
             </div>
-            <div class="cait_memory_manager-cont" data-tool="cai_tools">
+            <div class="cait_memory_manager-cont" data-tool="cai_tools" data-import_needed="true">
                 <div class="cait_memory_manager">
                     <div class="caitmm_header">
                         <h4>Memory Manager</h4><span class="caitmm-close">x</span>
@@ -656,6 +656,7 @@
 
     }
 
+    // I don't know why I am using "container." instead of "document."
     function close_caiToolsModal(container) {
         container.querySelector('.cai_tools-cont').classList.remove('active');
     }
@@ -663,7 +664,10 @@
         container.querySelector('.cait_settings-cont').classList.remove('active');
     }
     function close_caitMemoryManagerModal(container) {
-        container.querySelector('.cait_memory_manager-cont').classList.remove('active');
+        if (container)
+            container.querySelector('.cait_memory_manager-cont').classList.remove('active');
+        else
+            document.querySelector('.cait_memory_manager-cont').classList.remove('active');
     }
     // CAI Tools - DOM - END
 
@@ -672,7 +676,6 @@
     // MEMORY MANAGER
     function MemoryManager() {
         try {
-            console.log("Memory Manager ran");
             const container = document.querySelector('.cait_memory_manager-cont');
             // Memory manager settings
             const mmActive = container.querySelector('input[name="cait_mm_active"]');
@@ -727,22 +730,26 @@
             const settings = caiToolsSettings.memoryManager;
 
             // Import settings
-            mmActive.checked = settings.mmActive;
-            remindFrequency.value = settings.mmRemindFrequency > 0 ? settings.mmRemindFrequency : 5;
-            // Import existing memory list and some error handling
-            if (!settings.mmList) settings.mmList = [];
-            const charId = getCharId();
-            if (!charId) throw "Char ID is undefined";
-            const charSettings = settings.mmList.find(obj => obj.char === charId);
-            if (charSettings) {
-                // Clean up and append
-                currentMemoryList.innerHTML = "";
-                charSettings.list.forEach(pushToMemoryList);
-            } else {
-                settings.mmList.push({
-                    char: charId,
-                    list: []
-                });
+            if (container.dataset.import_needed === "true") {
+                mmActive.checked = settings.mmActive;
+                remindFrequency.value = settings.mmRemindFrequency > 0 ? settings.mmRemindFrequency : 5;
+                // Import existing memory list and some error handling
+                if (!settings.mmList) settings.mmList = [];
+                const charId = getCharId();
+                if (!charId) throw "Char ID is undefined";
+                const charSettings = settings.mmList.find(obj => obj.char === charId);
+                if (charSettings) {
+                    // Clean up and append
+                    currentMemoryList.innerHTML = "";
+                    charSettings.list.forEach(pushToMemoryList);
+                } else {
+                    settings.mmList.push({
+                        char: charId,
+                        list: []
+                    });
+                }
+                // Prevent import the second time
+                container.dataset.import_needed = "false";
             }
 
             // Add new memory
@@ -750,6 +757,13 @@
                 if (newMemoryField.value.trim().length === 0) return;
                 pushToMemoryList(newMemoryField.value.trim());
                 newMemoryField.value = "";
+            });
+
+            // Cancel
+            cancelPlan.addEventListener('click', () => {
+                // Import from settings the next time
+                container.dataset.import_needed = "true";
+                close_caitMemoryManagerModal();
             });
 
             // Save
@@ -771,8 +785,9 @@
                     });
 
                     localStorage.setItem('cai_tools', JSON.stringify(caiToolsSettings));
-                    close_caitMemoryManagerModal(container);
+                    close_caitMemoryManagerModal();
                 } catch (error) {
+                    console.log("Screenshot this error please; ", error);
                     alert("Couldn't be saved, please report on github if you don't know the reason");
                 }
             });

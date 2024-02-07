@@ -156,6 +156,11 @@ a[href="#-"] {
     max-width: 280px;
 }
 
+.cai_tools .donate_link {
+    font-size: 1rem;
+    padding: 0 14px 6px;
+}
+
 .cai_tools .cait-body span.cait_warning {
     display: none;
     padding: 0px 4px 8px;
@@ -262,6 +267,12 @@ a[href="#-"] {
 .cait_memory_manager input[name="cait_mm_active"] {
     width: 1.1rem;
     height: 1.1rem;
+}
+
+.cait_memory_manager .note {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    font-weight: 300;
 }
 
 .cait_memory_manager span.reminder-wrap {

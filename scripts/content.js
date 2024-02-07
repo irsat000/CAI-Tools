@@ -408,6 +408,7 @@
                     <div class="cait-header">
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
                     </div>
+                    <a href="https://www.patreon.com/Irsat" target="_blank" class="donate_link">Support me on Patreon</a>
                     <div class="cait-body">
                         <span class="cait_warning"></span>
                         <ul>
@@ -447,6 +448,7 @@
                     </div>
                     <div class="caitmm-body">
                         <label class="mm_status">Active <input type="checkbox" name="cait_mm_active" unchecked /></label>
+                        <span class="note">Note: 0 frequency means every message.</span>
                         <span class="reminder-wrap">
                             Remind every <input type="number" name="remind_frequency" value="5" min="0" max="100" /> messages
                         </span>
@@ -589,6 +591,7 @@
                     <div class="cait-header">
                         <h4>CAI Tools</h4><span class="cait-close">x</span>
                     </div>
+                    <a href="https://www.patreon.com/Irsat" target="_blank" class="donate_link">Support me on Patreon</a>
                     <div class="cait-body">
                         <span class="cait_warning"></span>
                         <h6>History</h6>

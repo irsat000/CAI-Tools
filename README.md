@@ -12,6 +12,7 @@ Note: Mobile phone users can use Kiwi browser and download the extension from Ch
 
 # How to
 For conversation and character data, navigate to a conversation pages. You can choose any conversation from histories page.
+For Memory Manager, it's one of the options in conversation page
 For history data, navigate to "View Chat Histories".
 
 Click on CAI Tools button on top right corner to open the menu. You will see all the features in there.
@@ -26,6 +27,8 @@ Character AI developers are constantly updating the website. This comes with man
 
 # Feature List
 ### Conversation Page
+###### Memory Manager
+Reminds the character whatever you want every X message. You can choose the frequency. You can activate or deactivate it in the menu. Remind the character about history, settings, plot, scenario, anything.
 ###### Download Character (json)
 It downloads the character file in formats supported by other AI platforms, such as Tavern and Oobabooga.
 ###### Download Character Card (png)
@@ -57,7 +60,9 @@ You can drag the button by its appendage on the left. If tapped 3 times consecut
 Shows up to 999 chats in "View Chat Histories". You can download it all. The limit they put was originally 50.
 
 # Screenshot
-![Preview](https://github.com/irsat000/CAI-Tools/assets/38238671/ff724f87-abb1-4d47-86a8-409d13cdea67)
+![Preview](https://github.com/irsat000/CAI-Tools/assets/38238671/5c585ed9-3259-4a5d-bc0d-29974ce4bdee)
+![Memory Manager](https://github.com/irsat000/CAI-Tools/assets/38238671/19351f05-1dc8-480d-b011-e678e4948b1a)
+
 
 # Contributors
 See the list of [contributors.](AUTHORS)

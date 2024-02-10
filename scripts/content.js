@@ -1045,9 +1045,10 @@
                     socket.send(JSON.stringify(sendUserMessageAgainPayload));
                 }
                 else if (wsdata.command === "add_turn" || wsdata.command === "update_turn") {
+                    // Aborting sometimes deletes unexpectedly, I will skip aborting for now
                     // Abort once if it's CHAR's "update" to get response as fast as we can
                     // Note: aborting add_turn results in complete message delete and thus duplication failure
-                    if (!wsdata.turn.candidates[0].is_final
+                    if (false && !wsdata.turn.candidates[0].is_final
                         && !wsdata.turn.author.is_human
                         && !abortedReqs.includes(wsdata.request_id)
                         && wsdata.command === "update_turn") {

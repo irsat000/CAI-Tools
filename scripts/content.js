@@ -425,6 +425,7 @@
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
+                            <li data-cait_type='cai_duplicate_chat'>Duplicate the Chat</li>
                             <li data-cait_type='cai_offline_read'>Download to read offline</li>
                             <li data-cait_type='oobabooga'>Download as Oobabooga chat</li>
 							<li data-cait_type='tavern'>Download as Tavern chat</li>
@@ -556,6 +557,11 @@
 
         container.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_offline_read' };
+            DownloadConversation(args);
+            close_caiToolsModal(container);
+        });
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_duplicate_chat"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_duplicate_chat' };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
@@ -840,8 +846,10 @@
 
         switch (args.downloadType) {
             case "cai_offline_read":
+                Download_OfflineReading(chatData);
+                break;
+            case "cai_duplicate_chat":
                 DuplicateChat(chatData);
-                //Download_OfflineReading(chatData);
                 break;
             case "oobabooga":
                 if (charName === "NULL!") {
@@ -873,6 +881,8 @@
 
     async function DuplicateChat(chatData) {
         try {
+            // Todo: Shorten the chatData, down to maybe 50 messages or 100
+
             // Get all necessary data
             console.log(chatData);
             const charId = getCharId();
@@ -902,6 +912,7 @@
             const randomOriginId = crypto.randomUUID();
             // Store chat id
             let chatId = "";
+            let abortedReqs = [];
 
 
             // Handle incoming messages
@@ -995,8 +1006,24 @@
                     socket.send(JSON.stringify(sendUserMessageAgainPayload));
                 }
                 else if (wsdata.command === "add_turn" || wsdata.command === "update_turn") {
-                    if (!wsdata.turn.candidates[0].is_final) return; // Ignore updates and take final one
-                    //else if (wsdata.turn.candidates.length > 1) return; // Ignore if this is edit "update_turn"
+                    // Abort once if it's CHAR's "update" to get response as fast as we can
+                    // Note: aborting add_turn results in complete message delete and thus duplication failure
+                    if (!wsdata.turn.candidates[0].is_final
+                        && !wsdata.turn.author.is_human
+                        && !abortedReqs.includes(wsdata.request_id)
+                        && wsdata.command === "update_turn") {
+                        // Use request_id of the update_turn
+                        const abortPayload = {
+                            "command": "abort_generation",
+                            "request_id": wsdata.request_id,
+                            "origin_id": randomOriginId
+                        };
+                        socket.send(JSON.stringify(abortPayload));
+                        // Add to aborted request to not abort again
+                        abortedReqs.push(wsdata.request_id);
+                        return;
+                    }
+                    else if (!wsdata.turn.candidates[0].is_final) return; // Ignore updates and take final one
                     else if (wsdata.turn.author.is_human) return; // Ignore the user's message
                     else if (msgIndex >= chatData.length) return; // Stop if the original chat came to an end
 

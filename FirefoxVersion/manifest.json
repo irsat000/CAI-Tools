@@ -1,0 +1,40 @@
+{
+    "manifest_version": 2,
+    "name": "CAI Tools",
+    "description": "Various tools for Character AI website.",
+    "version": "1.8.0",
+    "icons": {
+        "128": "/logo128.png"
+    },
+    "permissions": [
+        "https://characterai.io/*",
+        "https://neo.character.ai/*"
+    ],
+    "background": {
+        "scripts": [
+            "/scripts/background.js"
+        ]
+    },
+    "web_accessible_resources": [
+        "/scripts/xhook.min.js",
+        "/scripts/wsHook.js",
+        "/ReadOffline.html"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://beta.character.ai/*",
+                "https://plus.character.ai/*"
+            ],
+            "js": [
+                "/scripts/crc32.min.js",
+                "/scripts/jszip.min.js",
+                "/scripts/content.js"
+            ],
+            "css": [
+                "/style/main.css"
+            ],
+            "run_at": "document_end"
+        }
+    ]
+}

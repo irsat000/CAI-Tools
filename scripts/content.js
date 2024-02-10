@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.8.0";
+    const extVersion = "1.9.0";
 
     const metadata = {
         version: 1,
@@ -418,18 +418,19 @@
                         </ul>
                         <h6>Character</h6>
                         <ul>
-                            <li data-cait_type='character_hybrid'>Download Character (json)</li>
-                            <li data-cait_type='character_card'>Download Character Card (png)</li>
+                            <li data-cait_type='character_hybrid'>Character (json)</li>
+                            <li data-cait_type='character_card'>Character Card (png)</li>
                             <li data-cait_type='character_settings'>Show settings</li>
                         </ul>
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
-                            <li data-cait_type='cai_duplicate_chat'>Duplicate the Chat</li>
-                            <li data-cait_type='cai_offline_read'>Download to read offline</li>
-                            <li data-cait_type='oobabooga'>Download as Oobabooga chat</li>
-							<li data-cait_type='tavern'>Download as Tavern chat</li>
-                            <li data-cait_type='example_chat'>Download as example chat/definition</li>
+                            <li data-cait_type='cai_duplicate_chat'>Create Duplicate <i>(Last 100 msgs)</i></li>
+                            <li data-cait_type='cai_duplicate_chat_full'>Create Duplicate <i>(Full)</i></li>
+                            <li data-cait_type='cai_offline_read'>Offline Chat</li>
+                            <li data-cait_type='example_chat'>Chat as Definition</li>
+                            <li data-cait_type='oobabooga'>Oobabooga chat</li>
+							<li data-cait_type='tavern'>Tavern chat</li>
                         </ul>
                     </div>
                 </div>
@@ -463,6 +464,15 @@
                             <button type="button" class="cancel">Cancel</button>
                             <button type="button" class="save">Save</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cait_info-cont">
+                <div class="cait_info">
+                    <div class="caiti_header">
+                        <h4>CAI Tools</h4><span class="caiti-close">x</span>
+                    </div>
+                    <div class="caiti-body">
                     </div>
                 </div>
             </div>
@@ -533,7 +543,14 @@
                 close_caitMemoryManagerModal(container);
             });*/
         });
+        container.querySelector('.cait_info-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cait_info-cont') || target.classList.contains('caiti-close')) {
+                close_caitInfoModal();
+            }
+        });
 
+        // Features on click
         container.querySelector('.cai_tools-cont [data-cait_type="memory_manager"]').addEventListener('click', () => {
             MemoryManager();
             close_caiToolsModal(container);
@@ -562,6 +579,11 @@
         });
         container.querySelector('.cai_tools-cont [data-cait_type="cai_duplicate_chat"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_duplicate_chat' };
+            DownloadConversation(args);
+            close_caiToolsModal(container);
+        });
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_duplicate_chat_full"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_duplicate_chat_full' };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
@@ -690,6 +712,9 @@
             container.querySelector('.cait_memory_manager-cont').classList.remove('active');
         else
             document.querySelector('.cait_memory_manager-cont').classList.remove('active');
+    }
+    function close_caitInfoModal() {
+        document.querySelector('.cait_info-cont').classList.remove('active');
     }
     // CAI Tools - DOM - END
 
@@ -851,6 +876,9 @@
             case "cai_duplicate_chat":
                 DuplicateChat(chatData);
                 break;
+            case "cai_duplicate_chat_full":
+                DuplicateChat(chatData, 100);
+                break;
             case "oobabooga":
                 if (charName === "NULL!") {
                     alert("Character name couldn't be found!");
@@ -879,9 +907,13 @@
 
 
 
-    async function DuplicateChat(chatData) {
+    async function DuplicateChat(chatData, maxMsgLength) {
         try {
-            // Todo: Shorten the chatData, down to maybe 50 messages or 100
+            // Trim the chatData for faster job, optionally
+            if (maxMsgLength) {
+                // Get last X messages
+                chatData = chatData.slice(-maxMsgLength);
+            }
 
             // Get all necessary data
             console.log(chatData);
@@ -915,6 +947,10 @@
             let abortedReqs = [];
 
 
+            const infoContainer = document.querySelector('.cait_info-cont');
+            infoContainer.classList.add('active');
+            const infoBody = infoContainer.querySelector('.caiti-body');
+
             // Handle incoming messages
             socket.addEventListener("message", (event) => {
                 if (!event.data) return;
@@ -943,6 +979,9 @@
 
                     // Increase the index to get next msg in line
                     msgIndex++;
+
+                    // Update info
+                    infoBody.innerHTML = `<p>Recreating messages ${msgIndex}/${chatData.length}</p>`;
 
                     const sendUserMessageAgainPayload = {
                         "command": "create_and_generate_turn",
@@ -1025,7 +1064,12 @@
                     }
                     else if (!wsdata.turn.candidates[0].is_final) return; // Ignore updates and take final one
                     else if (wsdata.turn.author.is_human) return; // Ignore the user's message
-                    else if (msgIndex >= chatData.length) return; // Stop if the original chat came to an end
+                    else if (msgIndex >= chatData.length) {
+                        // Stop if the original chat came to an end
+                        // And update the info modal with link
+                        infoBody.innerHTML = `<p>Complete! Duplicate chat;<br /><a href="${newChatPage}" target="_blank">${newChatPage}</a></p>`;
+                        return
+                    };
 
                     // Get necessary data
                     const msg = chatData[msgIndex];
@@ -1038,6 +1082,9 @@
                     const candidateId = wsdata.turn.primary_candidate_id;
                     // Increase the index to get next msg in line
                     msgIndex++;
+
+                    // Update info
+                    infoBody.innerHTML = `<p>Recreating messages ${msgIndex}/${chatData.length}</p>`;
 
                     // If msg is human and previous wasn't human, send message
                     if (msg.isHuman && !prevMsgWasHuman) {

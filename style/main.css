@@ -70,7 +70,8 @@ a[href="#-"] {
 
 .cai_tools-cont,
 .cait_settings-cont,
-.cait_memory_manager-cont {
+.cait_memory_manager-cont,
+.cait_info-cont {
     display: none;
     /*flex*/
     z-index: 999;
@@ -86,13 +87,15 @@ a[href="#-"] {
 
 .cai_tools-cont.active,
 .cait_settings-cont.active,
-.cait_memory_manager-cont.active {
+.cait_memory_manager-cont.active,
+.cait_info-cont.active {
     display: flex;
 }
 
 .cai_tools .cait-header,
 .cait_settings .caits_header,
-.cait_memory_manager .caitmm_header {
+.cait_memory_manager .caitmm_header,
+.cait_info .caiti_header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -101,7 +104,8 @@ a[href="#-"] {
 
 .cai_tools .cait-header h4,
 .cait_settings .caits_header h4,
-.cait_memory_manager .caitmm_header h4 {
+.cait_memory_manager .caitmm_header h4,
+.cait_info .caiti_header h4 {
     font-size: 18px;
     margin: 0;
     padding: 0;
@@ -109,7 +113,8 @@ a[href="#-"] {
 
 .cai_tools .cait-header span,
 .cait_settings .caits_header span,
-.cait_memory_manager .caitmm_header span {
+.cait_memory_manager .caitmm_header span,
+.cait_info .caiti_header span {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -124,13 +129,15 @@ a[href="#-"] {
 
 .cai_tools .cait-header span:hover,
 .cait_settings .caits_header span:hover,
-.cait_memory_manager .caitmm_header span:hover {
+.cait_memory_manager .caitmm_header span:hover,
+.cait_info .caiti_header span:hover {
     background-color: #3b3b3b;
 }
 
 .cai_tools .cait-body,
 .cait_settings .caits-body,
-.cait_memory_manager .caitmm-body {
+.cait_memory_manager .caitmm-body,
+.cait_info .caiti-body {
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -140,7 +147,30 @@ a[href="#-"] {
 
 
 
+.cait_info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    border: 1px solid #676767;
+    background-color: #272727;
+    color: #ffffff;
+    border-radius: 8px;
+    width: 96%;
+    max-width: 280px;
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior: none;
+}
 
+.cait_info p {
+    margin: 20px 0 30px;
+    text-align: center;
+    overflow: hidden;
+}
+
+.cait_info a {
+    word-break: break-word;
+}
 
 
 
@@ -154,6 +184,9 @@ a[href="#-"] {
     border-radius: 8px;
     width: 96%;
     max-width: 280px;
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior: none;
 }
 
 .cai_tools .donate_link {
@@ -190,8 +223,10 @@ a[href="#-"] {
     padding: 0;
     width: 100%;
     margin-bottom: 10px;
-    border-radius: 10px;
     overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 5px;
 }
 
 .cai_tools .cait-body ul:last-child {
@@ -200,11 +235,16 @@ a[href="#-"] {
 
 .cai_tools .cait-body ul li {
     display: block;
-    width: 100%;
     padding: 10px 10px;
     font-size: 14px;
     font-weight: 400;
     cursor: pointer;
+    border-radius: 6px;
+}
+
+.cai_tools .cait-body ul li i {
+    font-size: 0.8rem;
+    font-weight: 300;
 }
 
 .cai_tools .cait-body ul li:hover {

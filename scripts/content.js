@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.8.0";
+    const extVersion = "1.9.0";
 
     const metadata = {
         version: 1,
@@ -162,7 +162,8 @@
                     chatData.turns.filter(m => m.is_alternative == false && m.src__name != null).forEach((msg) => {
                         const newSimplifiedMessage = {
                             name: msg.src__name,
-                            message: msg.text
+                            message: msg.text,
+                            isHuman: msg.src__is_human
                         }
                         newSimplifiedChat.push(newSimplifiedMessage);
                     });
@@ -219,7 +220,8 @@
                     chatData.turns.forEach((msg) => {
                         const newSimplifiedMessage = {
                             name: msg.author.name,
-                            message: msg.candidates[msg.candidates.length - 1].raw_content
+                            message: msg.candidates[msg.candidates.length - 1].raw_content,
+                            isHuman: !!msg.author.is_human
                         }
                         newSimplifiedChat.push(newSimplifiedMessage);
                     });
@@ -411,22 +413,22 @@
                     <a href="https://www.patreon.com/Irsat" target="_blank" class="donate_link">Support me on Patreon</a>
                     <div class="cait-body">
                         <span class="cait_warning"></span>
-                        <ul>
-                            <li data-cait_type='memory_manager'>Memory Manager (NEW!)</li>
-                        </ul>
                         <h6>Character</h6>
                         <ul>
-                            <li data-cait_type='character_hybrid'>Download Character (json)</li>
-                            <li data-cait_type='character_card'>Download Character Card (png)</li>
+                            <li data-cait_type='memory_manager'>Memory Manager</li>
+                            <li data-cait_type='character_hybrid'>Character (json)</li>
+                            <li data-cait_type='character_card'>Character Card (png)</li>
                             <li data-cait_type='character_settings'>Show settings</li>
                         </ul>
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
                         <ul>
-                            <li data-cait_type='cai_offline_read'>Download to read offline</li>
-                            <li data-cait_type='oobabooga'>Download as Oobabooga chat</li>
-							<li data-cait_type='tavern'>Download as Tavern chat</li>
-                            <li data-cait_type='example_chat'>Download as example chat/definition</li>
+                            <li data-cait_type='cai_duplicate_chat'>Create Duplicate <i>(Last 100 msgs)</i></li>
+                            <li data-cait_type='cai_duplicate_chat_full'>Create Duplicate <i>(Full)</i></li>
+                            <li data-cait_type='cai_offline_read'>Offline Chat</li>
+                            <li data-cait_type='example_chat'>Chat as Definition</li>
+                            <li data-cait_type='oobabooga'>Oobabooga chat</li>
+							<li data-cait_type='tavern'>Tavern chat</li>
                         </ul>
                     </div>
                 </div>
@@ -460,6 +462,15 @@
                             <button type="button" class="cancel">Cancel</button>
                             <button type="button" class="save">Save</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cait_info-cont">
+                <div class="cait_info">
+                    <div class="caiti_header">
+                        <h4>CAI Tools</h4><span class="caiti-close">x</span>
+                    </div>
+                    <div class="caiti-body">
                     </div>
                 </div>
             </div>
@@ -530,7 +541,14 @@
                 close_caitMemoryManagerModal(container);
             });*/
         });
+        container.querySelector('.cait_info-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cait_info-cont') || target.classList.contains('caiti-close')) {
+                close_caitInfoModal();
+            }
+        });
 
+        // Features on click
         container.querySelector('.cai_tools-cont [data-cait_type="memory_manager"]').addEventListener('click', () => {
             MemoryManager();
             close_caiToolsModal(container);
@@ -554,6 +572,16 @@
 
         container.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_offline_read' };
+            DownloadConversation(args);
+            close_caiToolsModal(container);
+        });
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_duplicate_chat"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_duplicate_chat' };
+            DownloadConversation(args);
+            close_caiToolsModal(container);
+        });
+        container.querySelector('.cai_tools-cont [data-cait_type="cai_duplicate_chat_full"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_duplicate_chat_full' };
             DownloadConversation(args);
             close_caiToolsModal(container);
         });
@@ -682,6 +710,9 @@
             container.querySelector('.cait_memory_manager-cont').classList.remove('active');
         else
             document.querySelector('.cait_memory_manager-cont').classList.remove('active');
+    }
+    function close_caitInfoModal() {
+        document.querySelector('.cait_info-cont').classList.remove('active');
     }
     // CAI Tools - DOM - END
 
@@ -840,6 +871,12 @@
             case "cai_offline_read":
                 Download_OfflineReading(chatData);
                 break;
+            case "cai_duplicate_chat":
+                DuplicateChat(chatData, 100);
+                break;
+            case "cai_duplicate_chat_full":
+                DuplicateChat(chatData);
+                break;
             case "oobabooga":
                 if (charName === "NULL!") {
                     alert("Character name couldn't be found!");
@@ -865,6 +902,316 @@
                 break;
         }
     }
+
+
+
+    async function DuplicateChat(chatData, maxMsgLength) {
+        try {
+            // Trim the chatData for faster job, optionally
+            if (maxMsgLength) {
+                // Get last X messages
+                chatData = chatData.slice(-maxMsgLength);
+            }
+
+            // Get all necessary data
+            console.log("Cloning:", chatData);
+            const charId = getCharId();
+            const userInfo = await getUserId({ withUsername: true });
+            if (!userInfo || !charId) {
+                alert("Requirements missing, can't proceed to duplication.");
+                return;
+            }
+            const { userId, username } = userInfo;
+
+
+            // Deactivate memory manager before duplication
+            // because it will intercept the duplicated messages and add the memories
+            let caiToolsSettings = JSON.parse(localStorage.getItem('cai_tools'));
+            if (caiToolsSettings && caiToolsSettings.memoryManager) {
+                caiToolsSettings.memoryManager.mmActive = false;
+                localStorage.setItem('cai_tools', JSON.stringify(caiToolsSettings))
+            }
+            // Initialize link here
+            let newChatPage = null;
+            // Create new connection
+            const socket = new WebSocket("wss://neo.character.ai/ws/");
+            let msgIndex = 0;
+            // For back to back messages, we need the last message info
+            let prevThisTurnId = "";
+            // For persisting origin id, for whatever it is
+            const randomOriginId = crypto.randomUUID();
+            // Store chat id
+            let chatId = "";
+            let abortedReqs = [];
+
+            // Start informing user
+            const infoContainer = document.querySelector('.cait_info-cont');
+            const infoBody = infoContainer.querySelector('.caiti-body');
+            infoBody.innerHTML = "Creating new chat...";
+            infoContainer.classList.add('active');
+
+            // Handle incoming messages
+            socket.addEventListener("message", (event) => {
+                if (!event.data) return;
+                const wsdata = JSON.parse(event.data);
+                // console.log(wsdata);
+
+                // We need to wait after create_chat_response and get the greeting message
+                // From that message, we will get the ids that we will use to send message
+                // turn.primary_candidate_id to get update_primary_candidate.candidate_id
+                // turn.turn_key.turn_id to get update_primary_candidate.candidate_id.turn_id
+                if (wsdata.command === "create_chat_response") {
+                    if (!wsdata.chat || !wsdata.chat.character_id || !wsdata.chat.chat_id) {
+                        alert("New chat requirements missing, can't proceed to duplication.");
+                        return;
+                    }
+                    chatId = wsdata.chat.chat_id;
+                    // Store to give user later
+                    newChatPage = `https://${getMembership()}.character.ai/chat2?char=${charId}&hist=${chatId}`;
+                    console.log(newChatPage);
+                }
+                else if (wsdata.command === "remove_turns_response") {
+                    // Remove means previous message was the user as well, so we have to delete it and send message
+                    // Get necessary data
+                    const msg = chatData[msgIndex];
+                    const thisTurnId = crypto.randomUUID();
+
+                    // Increase the index to get next msg in line
+                    msgIndex++;
+
+                    // Update info
+                    infoBody.innerHTML = `<p>Recreating messages from scratch ${msgIndex}/${chatData.length}</p>`;
+
+                    const sendUserMessageAgainPayload = {
+                        "command": "create_and_generate_turn",
+                        "request_id": crypto.randomUUID(),
+                        "payload": {
+                            "num_candidates": 1,
+                            "tts_enabled": false,
+                            "selected_language": "English",
+                            "character_id": charId,
+                            "user_name": username,
+                            "turn": {
+                                "turn_key": {
+                                    "turn_id": thisTurnId,
+                                    "chat_id": chatId
+                                },
+                                "author": {
+                                    "author_id": userId.toString(),
+                                    "is_human": true,
+                                    "name": username
+                                },
+                                "candidates": [{
+                                    "candidate_id": thisTurnId,
+                                    "raw_content": msg.message
+                                }],
+                                "primary_candidate_id": thisTurnId
+                            },
+                            "previous_annotations": {
+                                "boring": 0,
+                                "not_boring": 0,
+                                "inaccurate": 0,
+                                "not_inaccurate": 0,
+                                "repetitive": 0,
+                                "not_repetitive": 0,
+                                "out_of_character": 0,
+                                "not_out_of_character": 0,
+                                "bad_memory": 0,
+                                "not_bad_memory": 0,
+                                "long": 0,
+                                "not_long": 0,
+                                "short": 0,
+                                "not_short": 0,
+                                "ends_chat_early": 0,
+                                "not_ends_chat_early": 0,
+                                "funny": 0,
+                                "not_funny": 0,
+                                "interesting": 0,
+                                "not_interesting": 0,
+                                "helpful": 0,
+                                "not_helpful": 0
+                            },
+                            "update_primary_candidate": {
+                                "candidate_id": prevThisTurnId,
+                                "turn_key": {
+                                    "turn_id": prevThisTurnId,
+                                    "chat_id": chatId
+                                }
+                            }
+                        },
+                        "origin_id": randomOriginId
+                    };
+                    socket.send(JSON.stringify(sendUserMessageAgainPayload));
+                }
+                else if (wsdata.command === "add_turn" || wsdata.command === "update_turn") {
+                    // Aborting sometimes deletes unexpectedly, I will skip aborting for now
+                    // Abort once if it's CHAR's "update" to get response as fast as we can
+                    // Note: aborting add_turn results in complete message delete and thus duplication failure
+                    if (false && !wsdata.turn.candidates[0].is_final
+                        && !wsdata.turn.author.is_human
+                        && !abortedReqs.includes(wsdata.request_id)
+                        && wsdata.command === "update_turn") {
+                        // Use request_id of the update_turn
+                        const abortPayload = {
+                            "command": "abort_generation",
+                            "request_id": wsdata.request_id,
+                            "origin_id": randomOriginId
+                        };
+                        socket.send(JSON.stringify(abortPayload));
+                        // Add to aborted request to not abort again
+                        abortedReqs.push(wsdata.request_id);
+                        return;
+                    }
+                    else if (!wsdata.turn.candidates[0].is_final) return; // Ignore updates and take final one
+                    else if (wsdata.turn.author.is_human) return; // Ignore the user's message
+                    else if (msgIndex >= chatData.length) {
+                        // Stop if the original chat came to an end
+                        // And update the info modal with link
+                        infoBody.innerHTML = `<p>Complete! Duplicate chat;<br /><a href="${newChatPage}" target="_blank">${newChatPage}</a></p>`;
+                        return
+                    };
+
+                    // Get necessary data
+                    const msg = chatData[msgIndex];
+                    const prevMsgWasHuman = chatData[msgIndex - 1] ? chatData[msgIndex - 1].isHuman : false;
+
+                    const thisTurnId = crypto.randomUUID();
+                    prevThisTurnId = thisTurnId;
+                    // These are required to follow up the previous message
+                    const turnKey = wsdata.turn.turn_key.turn_id;
+                    const candidateId = wsdata.turn.primary_candidate_id;
+                    // Increase the index to get next msg in line
+                    msgIndex++;
+
+                    // Update info
+                    infoBody.innerHTML = `<p>Recreating messages ${msgIndex}/${chatData.length}</p>`;
+
+                    // If msg is human and previous wasn't human, send message
+                    if (msg.isHuman && !prevMsgWasHuman) {
+                        const sendUserMessagePayload = {
+                            "command": "create_and_generate_turn",
+                            "request_id": crypto.randomUUID(),
+                            "payload": {
+                                "num_candidates": 1,
+                                "tts_enabled": false,
+                                "selected_language": "English",
+                                "character_id": charId,
+                                "user_name": username,
+                                "turn": {
+                                    "turn_key": {
+                                        "turn_id": thisTurnId,
+                                        "chat_id": chatId
+                                    },
+                                    "author": {
+                                        "author_id": userId.toString(),
+                                        "is_human": true,
+                                        "name": username
+                                    },
+                                    "candidates": [{
+                                        "candidate_id": thisTurnId,
+                                        "raw_content": msg.message
+                                    }],
+                                    "primary_candidate_id": thisTurnId
+                                },
+                                "previous_annotations": {
+                                    "boring": 0,
+                                    "not_boring": 0,
+                                    "inaccurate": 0,
+                                    "not_inaccurate": 0,
+                                    "repetitive": 0,
+                                    "not_repetitive": 0,
+                                    "out_of_character": 0,
+                                    "not_out_of_character": 0,
+                                    "bad_memory": 0,
+                                    "not_bad_memory": 0,
+                                    "long": 0,
+                                    "not_long": 0,
+                                    "short": 0,
+                                    "not_short": 0,
+                                    "ends_chat_early": 0,
+                                    "not_ends_chat_early": 0,
+                                    "funny": 0,
+                                    "not_funny": 0,
+                                    "interesting": 0,
+                                    "not_interesting": 0,
+                                    "helpful": 0,
+                                    "not_helpful": 0
+                                },
+                                "update_primary_candidate": {
+                                    "candidate_id": candidateId,
+                                    "turn_key": {
+                                        "turn_id": turnKey,
+                                        "chat_id": chatId
+                                    }
+                                }
+                            },
+                            "origin_id": randomOriginId
+                        };
+                        socket.send(JSON.stringify(sendUserMessagePayload));
+                    }
+                    else if (msg.isHuman && prevMsgWasHuman) {
+                        // If msg is human and previous was human, delete this char reply and send message
+                        const deleteCharMessagePayload = {
+                            "command": "remove_turns",
+                            "request_id": "0325a206-d21c-4c61-95ce-57E-r595wbE0",
+                            "payload": {
+                                "chat_id": wsdata.turn.turn_key.chat_id,
+                                "turn_ids": [turnKey]
+                            },
+                            "origin_id": randomOriginId
+                        };
+                        socket.send(JSON.stringify(deleteCharMessagePayload));
+                    }
+                    else {
+                        // If msg is char, edit the reply received just now
+                        const editCharMessagePayload = {
+                            "command": "edit_turn_candidate",
+                            "request_id": crypto.randomUUID(),
+                            "payload": {
+                                "turn_key": {
+                                    "chat_id": wsdata.turn.turn_key.chat_id,
+                                    "turn_id": turnKey
+                                },
+                                "current_candidate_id": wsdata.turn.candidates[0].candidate_id,
+                                "new_candidate_raw_content": msg.message
+                            },
+                            "origin_id": randomOriginId
+                        };
+                        socket.send(JSON.stringify(editCharMessagePayload));
+                    }
+                }
+                else {
+                    console.log("WS Data:", wsdata);
+                }
+            });
+
+            socket.addEventListener("open", () => {
+                // Create new chat2
+                const createChatPayload = {
+                    "command": "create_chat",
+                    "request_id": crypto.randomUUID(),
+                    "payload": {
+                        "chat": {
+                            "chat_id": crypto.randomUUID(),
+                            "creator_id": userId.toString(),
+                            "visibility": "VISIBILITY_PRIVATE",
+                            "character_id": charId,
+                            "type": "TYPE_ONE_ON_ONE"
+                        },
+                        "with_greeting": true
+                    },
+                    "origin_id": crypto.randomUUID()
+                }
+                socket.send(JSON.stringify(createChatPayload));
+            });
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+
+
+
 
     function DownloadConversation_Oobabooga(chatData, charName) {
         const ChatObject = {
@@ -1362,6 +1709,38 @@
 
 
     // UTILITY
+
+    async function getUserId(settings = { withUsername: false }) {
+        const AccessToken = getAccessToken();
+        if (!AccessToken) return null;
+        return await fetch(`https://${getMembership()}.character.ai/chat/user/`, {
+            method: "GET",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                "authorization": AccessToken
+            }
+        })
+            .then(res => res.ok ? res.json() : Promise.reject(res))
+            .then(data => {
+                if (!data?.user?.user?.id) {
+                    return null;
+                }
+                if (settings.withUsername) {
+                    return {
+                        userId: data.user.user.id,
+                        username: data.user.user.account.name
+                    };
+                }
+                else {
+                    return { userId: data.user.user.id };
+                }
+            })
+            .catch(err => {
+                console.log("Error while fetching user Id;", err)
+                return null;
+            });
+    }
 
     async function getAvatar(avatarSize, identity) {
         // 80 / 400 - avatarSize

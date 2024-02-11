@@ -413,11 +413,9 @@
                     <a href="https://www.patreon.com/Irsat" target="_blank" class="donate_link">Support me on Patreon</a>
                     <div class="cait-body">
                         <span class="cait_warning"></span>
-                        <ul>
-                            <li data-cait_type='memory_manager'>Memory Manager (NEW!)</li>
-                        </ul>
                         <h6>Character</h6>
                         <ul>
+                            <li data-cait_type='memory_manager'>Memory Manager</li>
                             <li data-cait_type='character_hybrid'>Character (json)</li>
                             <li data-cait_type='character_card'>Character Card (png)</li>
                             <li data-cait_type='character_settings'>Show settings</li>
@@ -948,8 +946,9 @@
 
 
             const infoContainer = document.querySelector('.cait_info-cont');
-            infoContainer.classList.add('active');
             const infoBody = infoContainer.querySelector('.caiti-body');
+            infoBody.innerHTML = "Creating new chat...";
+            infoContainer.classList.add('active');
 
             // Handle incoming messages
             socket.addEventListener("message", (event) => {

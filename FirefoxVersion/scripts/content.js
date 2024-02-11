@@ -872,10 +872,10 @@
                 Download_OfflineReading(chatData);
                 break;
             case "cai_duplicate_chat":
-                DuplicateChat(chatData);
+                DuplicateChat(chatData, 100);
                 break;
             case "cai_duplicate_chat_full":
-                DuplicateChat(chatData, 100);
+                DuplicateChat(chatData);
                 break;
             case "oobabooga":
                 if (charName === "NULL!") {
@@ -914,7 +914,7 @@
             }
 
             // Get all necessary data
-            console.log(chatData);
+            console.log("Cloning:", chatData);
             const charId = getCharId();
             const userInfo = await getUserId({ withUsername: true });
             if (!userInfo || !charId) {
@@ -944,7 +944,7 @@
             let chatId = "";
             let abortedReqs = [];
 
-
+            // Start informing user
             const infoContainer = document.querySelector('.cait_info-cont');
             const infoBody = infoContainer.querySelector('.caiti-body');
             infoBody.innerHTML = "Creating new chat...";
@@ -954,7 +954,7 @@
             socket.addEventListener("message", (event) => {
                 if (!event.data) return;
                 const wsdata = JSON.parse(event.data);
-                console.log(wsdata);
+                // console.log(wsdata);
 
                 // We need to wait after create_chat_response and get the greeting message
                 // From that message, we will get the ids that we will use to send message
@@ -980,7 +980,7 @@
                     msgIndex++;
 
                     // Update info
-                    infoBody.innerHTML = `<p>Recreating messages ${msgIndex}/${chatData.length}</p>`;
+                    infoBody.innerHTML = `<p>Recreating messages from scratch ${msgIndex}/${chatData.length}</p>`;
 
                     const sendUserMessageAgainPayload = {
                         "command": "create_and_generate_turn",

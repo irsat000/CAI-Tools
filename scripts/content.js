@@ -1084,7 +1084,10 @@
                     msgIndex++;
 
                     // Update info
-                    infoBody.innerHTML = `<p>Recreating messages ${msgIndex}/${chatData.length}</p>`;
+                    if (!infoContainer.classList.contains('active')) {
+                        infoContainer.classList.add('active');
+                    }
+                    infoBody.innerHTML = `<p>Recreating messages from scratch ${msgIndex}/${chatData.length}</p>`;
 
                     // If msg is human and previous wasn't human, send message
                     if (msg.isHuman && !prevMsgWasHuman) {
@@ -1200,7 +1203,7 @@
                         },
                         "with_greeting": true
                     },
-                    "origin_id": crypto.randomUUID()
+                    "origin_id": randomOriginId
                 }
                 socket.send(JSON.stringify(createChatPayload));
             });

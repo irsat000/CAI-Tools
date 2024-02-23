@@ -47,15 +47,21 @@
             observer.lastHref = window.location.href;
 
             // Perform actions based on the URL change
-            const path = window.location.pathname;
-            if (path === "/chat" || path === "/chat2" || path === "/histories") {
-                initialize_options_DOM(path);
+            const location = window.location.hostname + '/' + window.location.pathname.split('/')[1];
+            if (location === 'character.ai/chat') {
+                initialize_caitools();
             }
-            else {
+            else if (location.includes('.character.ai/chat2')) {
+                initialize_caitools();
+            }
+            else if (location.includes('.character.ai/chat')) {
+                initialize_caitools();
+            }
+            /*else {
                 // Handle the modal reset
                 handleProgressInfoMeta("(Loading...)");
                 cleanDOM();
-            }
+            }*/
         }
     }
     // Create a MutationObserver instance
@@ -139,7 +145,7 @@
         console.log("FINISHED", newSimplifiedChat);
     }
 
-    const fetchMessages = async ({ AccessToken, nextPage, converExtId, chatData, fetchDataType }) => {
+    const fetchMessagesLegacy = async ({ AccessToken, nextPage, converExtId, chatData, fetchDataType }) => {
         console.log(nextPage);
         await new Promise(resolve => setTimeout(resolve, 200));
         let url = `https://${getMembership()}.character.ai/chat/history/msgs/user/?history_external_id=${converExtId}`;
@@ -152,9 +158,24 @@
                 "authorization": AccessToken
             }
         })
-            .then((res) => res.json())
+            .then(async (res) => {
+                if (res.ok)
+                    res.json()
+                else if (res.status === 429) {
+                    console.log("Rate limitting error. Will continue after 10 seconds.");
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                    return await fetchMessagesLegacy({
+                        AccessToken: AccessToken,
+                        nextPage: nextPage,
+                        converExtId: converExtId,
+                        chatData: chatData,
+                        fetchDataType: fetchDataType
+                    });
+                }
+                else
+                    Promise.reject(res);
+            })
             .then(async (data) => {
-
                 chatData.turns = [...data.messages, ...chatData.turns];
 
                 if (data.has_more == false) {
@@ -180,7 +201,7 @@
                     // This was the last fetch for the chat
                 }
 
-                await fetchMessages({
+                await fetchMessagesLegacy({
                     AccessToken: AccessToken,
                     nextPage: data.next_page,
                     converExtId: converExtId,
@@ -189,22 +210,15 @@
                 });
             })
             .catch(async (err) => {
-                console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
-                await new Promise(resolve => setTimeout(resolve, 10000));
-                return await fetchMessages({
-                    AccessToken: AccessToken,
-                    nextPage: nextPage,
-                    converExtId: converExtId,
-                    chatData: chatData,
-                    fetchDataType: fetchDataType
-                });
+                alert("Unexpected CAI Tools error, please report on github")
+                console.log("Unexpected CAI Tools error; " + err)
             });
     };
 
     const fetchMessagesChat2 = async ({ AccessToken, nextToken, converExtId, chatData, fetchDataType }) => {
         //Will be similar to fetchMessages. Next token will come from the previous fetch.
         //Last chat will give next token too.
-        //New fetch will repond with null next_token and empty turns.
+        //New fetch will repond with null next_token variable and empty turns.
         await new Promise(resolve => setTimeout(resolve, 200));
         let url = `https://neo.character.ai/turns/${converExtId}/`;
         await fetch(url + (nextToken ? `?next_token=${nextToken}` : ""), {
@@ -213,7 +227,23 @@
                 "authorization": AccessToken,
             }
         })
-            .then((res) => res.json())
+            .then(async (res) => {
+                if (res.ok)
+                    res.json()
+                else if (res.status === 429) {
+                    console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                    return await fetchMessagesChat2({
+                        AccessToken: AccessToken,
+                        nextToken: nextToken,
+                        converExtId: converExtId,
+                        chatData: chatData,
+                        fetchDataType: fetchDataType
+                    });
+                }
+                else
+                    Promise.reject(res)
+            })
             .then(async (data) => {
                 if (data.meta.next_token == null) {
                     const newSimplifiedChat = [];
@@ -252,15 +282,8 @@
                 });
             })
             .catch(async (err) => {
-                console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
-                await new Promise(resolve => setTimeout(resolve, 10000));
-                return await fetchMessagesChat2({
-                    AccessToken: AccessToken,
-                    nextToken: nextToken,
-                    converExtId: converExtId,
-                    chatData: chatData,
-                    fetchDataType: fetchDataType
-                });
+                alert("Unexpected CAI Tools error, please report on github")
+                console.log("Unexpected CAI Tools error; " + err)
             });
     }
 
@@ -308,7 +331,7 @@
         if (chatList.history1) {
             const chatData = { history: [], turns: [] }
             for (const chatId of chatList.history1) {
-                await fetchMessages({
+                await fetchMessagesLegacy({
                     AccessToken: AccessToken,
                     nextPage: 0,
                     converExtId: chatId,
@@ -348,7 +371,7 @@
         };
         if (pageType === "/chat") {
             args.nextPage = 0;
-            await fetchMessages(args);
+            await fetchMessagesLegacy(args);
         }
         else if (pageType === "/chat2") {
             args.nextToken = null;
@@ -949,6 +972,47 @@
             const infoBody = infoContainer.querySelector('.caiti-body');
             infoBody.innerHTML = "Creating new chat...";
             infoContainer.classList.add('active');
+            let chatIsCreated = false;
+
+            // On socket open
+            const sendCreateChatMessage = () => {
+                // Create new chat2
+                const createChatPayload = {
+                    "command": "create_chat",
+                    "request_id": crypto.randomUUID(),
+                    "payload": {
+                        "chat": {
+                            "chat_id": crypto.randomUUID(),
+                            "creator_id": userId.toString(),
+                            "visibility": "VISIBILITY_PRIVATE",
+                            "character_id": charId,
+                            "type": "TYPE_ONE_ON_ONE"
+                        },
+                        "with_greeting": true
+                    },
+                    "origin_id": randomOriginId
+                }
+                socket.send(JSON.stringify(createChatPayload));
+            }
+            // Check if the socket is already open
+            if (socket.readyState === 1) {
+                sendCreateChatMessage();
+            } else if (socket.readyState === 0) {
+                // Add event listener for the "open" event
+                socket.addEventListener("open", () => {
+                    sendCreateChatMessage();
+                });
+            } else {
+                throw "Socket readyState is not 0 or 1, it's: " + socket.readyState;
+            }
+
+            // Handle chat creation error when trying to connect to websocket
+            socket.addEventListener("close", (event) => {
+                if (!chatIsCreated) {
+                    alert('Error when trying to create new chat.');
+                    console.log("CAI Tools error: " + event);
+                }
+            });
 
             // Handle incoming messages
             socket.addEventListener("message", (event) => {
@@ -969,6 +1033,7 @@
                     // Store to give user later
                     newChatPage = `https://${getMembership()}.character.ai/chat2?char=${charId}&hist=${chatId}`;
                     console.log(newChatPage);
+                    chatIsCreated = true;
                 }
                 else if (wsdata.command === "remove_turns_response") {
                     // Remove means previous message was the user as well, so we have to delete it and send message
@@ -1186,26 +1251,6 @@
                 else {
                     console.log("WS Data:", wsdata);
                 }
-            });
-
-            socket.addEventListener("open", () => {
-                // Create new chat2
-                const createChatPayload = {
-                    "command": "create_chat",
-                    "request_id": crypto.randomUUID(),
-                    "payload": {
-                        "chat": {
-                            "chat_id": crypto.randomUUID(),
-                            "creator_id": userId.toString(),
-                            "visibility": "VISIBILITY_PRIVATE",
-                            "character_id": charId,
-                            "type": "TYPE_ONE_ON_ONE"
-                        },
-                        "with_greeting": true
-                    },
-                    "origin_id": randomOriginId
-                }
-                socket.send(JSON.stringify(createChatPayload));
             });
         } catch (error) {
             console.log(error);

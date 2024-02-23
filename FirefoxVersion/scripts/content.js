@@ -949,6 +949,47 @@
             const infoBody = infoContainer.querySelector('.caiti-body');
             infoBody.innerHTML = "Creating new chat...";
             infoContainer.classList.add('active');
+            let chatIsCreated = false;
+
+            // On socket open
+            const sendCreateChatMessage = () => {
+                // Create new chat2
+                const createChatPayload = {
+                    "command": "create_chat",
+                    "request_id": crypto.randomUUID(),
+                    "payload": {
+                        "chat": {
+                            "chat_id": crypto.randomUUID(),
+                            "creator_id": userId.toString(),
+                            "visibility": "VISIBILITY_PRIVATE",
+                            "character_id": charId,
+                            "type": "TYPE_ONE_ON_ONE"
+                        },
+                        "with_greeting": true
+                    },
+                    "origin_id": randomOriginId
+                }
+                socket.send(JSON.stringify(createChatPayload));
+            }
+            // Check if the socket is already open
+            if (socket.readyState === 1) {
+                sendCreateChatMessage();
+            } else if (socket.readyState === 0) {
+                // Add event listener for the "open" event
+                socket.addEventListener("open", () => {
+                    sendCreateChatMessage();
+                });
+            } else {
+                throw "Socket readyState is not 0 or 1, it's: " + socket.readyState;
+            }
+
+            // Handle chat creation error when trying to connect to websocket
+            socket.addEventListener("close", (event) => {
+                if (!chatIsCreated) {
+                    alert('Error when trying to create new chat.');
+                    console.log("CAI Tools error: " + event);
+                }
+            });
 
             // Handle incoming messages
             socket.addEventListener("message", (event) => {
@@ -969,6 +1010,7 @@
                     // Store to give user later
                     newChatPage = `https://${getMembership()}.character.ai/chat2?char=${charId}&hist=${chatId}`;
                     console.log(newChatPage);
+                    chatIsCreated = true;
                 }
                 else if (wsdata.command === "remove_turns_response") {
                     // Remove means previous message was the user as well, so we have to delete it and send message
@@ -1186,26 +1228,6 @@
                 else {
                     console.log("WS Data:", wsdata);
                 }
-            });
-
-            socket.addEventListener("open", () => {
-                // Create new chat2
-                const createChatPayload = {
-                    "command": "create_chat",
-                    "request_id": crypto.randomUUID(),
-                    "payload": {
-                        "chat": {
-                            "chat_id": crypto.randomUUID(),
-                            "creator_id": userId.toString(),
-                            "visibility": "VISIBILITY_PRIVATE",
-                            "character_id": charId,
-                            "type": "TYPE_ONE_ON_ONE"
-                        },
-                        "with_greeting": true
-                    },
-                    "origin_id": randomOriginId
-                }
-                socket.send(JSON.stringify(createChatPayload));
             });
         } catch (error) {
             console.log(error);

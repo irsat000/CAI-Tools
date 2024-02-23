@@ -8,7 +8,8 @@
     },
     "permissions": [
         "https://characterai.io/*",
-        "https://neo.character.ai/*"
+        "https://neo.character.ai/*",
+        "unlimitedStorage"
     ],
     "background": {
         "scripts": [

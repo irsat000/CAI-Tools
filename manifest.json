@@ -6,8 +6,7 @@
     "icons": {
         "128": "/logo128.png"
     },
-    "permissions": [
-    ],
+    "permissions": [],
     "background": {
         "service_worker": "/scripts/background.js"
     },
@@ -20,7 +19,8 @@
             ],
             "matches": [
                 "https://beta.character.ai/*",
-                "https://plus.character.ai/*"
+                "https://plus.character.ai/*",
+                "https://character.ai/*"
             ]
         }
     ],
@@ -28,7 +28,8 @@
         {
             "matches": [
                 "https://beta.character.ai/*",
-                "https://plus.character.ai/*"
+                "https://plus.character.ai/*",
+                "https://character.ai/*"
             ],
             "js": [
                 "/scripts/crc32.min.js",

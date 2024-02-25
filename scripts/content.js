@@ -98,6 +98,10 @@
         const progressInfo = document.querySelector('.cai_tools-cont .cait_progressInfo');
         if (progressInfo) progressInfo.textContent = text;
     }
+    function handleProgressInfoHist(text) {
+        const progressInfo = document.querySelector('.cai_tools-cont .cait_progressInfo_Hist');
+        if (progressInfo) progressInfo.textContent = text;
+    }
 
     function handleProgressInfoMeta222(text) {
         if (document.querySelector('meta[cait_progressInfo]')) {
@@ -356,6 +360,81 @@
                     fetchDataType: "history"
                 });
                 fetchedChatNumber++;
+                handleProgressInfoHist(`(Loading... Chat ${fetchedChatNumber}/${historyLength} completed)`);
+            }
+
+            finalHistory = [...finalHistory, ...chatData.history];
+        }
+
+        if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
+            document.querySelector('meta[cai_charid="' + charId + '"]')
+                .setAttribute('cai_history', JSON.stringify(finalHistory));
+        }
+        else {
+            const meta = document.createElement('meta');
+            meta.setAttribute('cai_charid', charId);
+            meta.setAttribute('cai_history', JSON.stringify(finalHistory));
+            document.head.appendChild(meta);
+        }
+        handleProgressInfoHist(`(Ready!)`);
+        console.log("FINISHED", finalHistory);
+    };
+
+    const fetchHistoryLegacy = async (charId) => {
+        const metaChar = document.querySelector('meta[cai_charid="' + charId + '"]');
+        const AccessToken = getAccessToken();
+        // Safety check
+        if (!metaChar || !AccessToken) {
+            return;
+        }
+
+        // WILL BE UPDATED WITH A PROPER HISTORY FETCH REQUESTS AND ORDERED BY DATE
+
+        const chatList = {
+            history1: JSON.parse(metaChar.getAttribute('cai_history1_chatlist')),
+            history2: JSON.parse(metaChar.getAttribute('cai_history2_chatlist'))
+        }
+        if (!chatList.history1 && !chatList.history2) {
+            alert("Failed to get history");
+            return;
+        }
+
+        createFetchStartedMeta("true");
+        let finalHistory = [];
+        let fetchedChatNumber = 1;
+        const historyLength = (chatList.history1?.length || 0) + (chatList.history2?.length || 0);
+
+        // Fetch chat2 history
+        if (chatList.history2) {
+            const chatData = { history: [], turns: [] }
+            for (const chatId of chatList.history2) {
+                await fetchMessagesChat2({
+                    AccessToken: AccessToken,
+                    nextToken: null,
+                    converExtId: chatId,
+                    chatData: chatData,
+                    fetchDataType: "history"
+                });
+                fetchedChatNumber++;
+                handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${historyLength} completed)`);
+            }
+
+            finalHistory = [...finalHistory, ...chatData.history];
+        }
+
+        // Fetch chat1 history
+        // Will be after chat2 because if there is chat2 then the character is primarily chat2 char
+        if (chatList.history1) {
+            const chatData = { history: [], turns: [] }
+            for (const chatId of chatList.history1) {
+                await fetchMessagesLegacy({
+                    AccessToken: AccessToken,
+                    nextPage: 0,
+                    converExtId: chatId,
+                    chatData: chatData,
+                    fetchDataType: "history"
+                });
+                fetchedChatNumber++;
                 handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${historyLength} completed)`);
             }
 
@@ -378,6 +457,7 @@
 
     const fetchConversation = async (converExtId) => {
         const AccessToken = getAccessToken();
+        if (!AccessToken) return; // Not necessary because we check it before that already
         const chatData = { history: [], turns: [] };
         let args = {
             AccessToken: AccessToken,
@@ -438,6 +518,14 @@
                             <li data-cait_type='oobabooga'>Oobabooga chat</li>
 							<li data-cait_type='tavern'>Tavern chat</li>
                         </ul>
+                        <h6>History</h6>
+                        <div class="history_loading-cont">
+                            <button type="button">Start fetch</button>
+                            <span class='cait_progressInfo_Hist'>(Waiting command...)</span>
+                        </div>
+                        <ul>
+                            <li data-cait_type='cai_offline_read'>Offline History</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -489,6 +577,11 @@
         document.querySelector('.cai_tools-btn').addEventListener('mouseup', openModal);
         document.querySelector('.cai_tools-btn').addEventListener('touchstart', openModal);
         async function openModal() {
+            const AccessToken = getAccessToken();
+            if (!AccessToken) {
+                alert("Access Token is not ready yet.");
+            }
+
             // Add active class to show
             document.querySelector('.cai_tools-cont').classList.add('active');
 
@@ -1091,9 +1184,13 @@
 
     // CONVERSATION
     async function DownloadConversation(args) {
+        const currentConversation = await getCurrentConverId();
+        if (!currentConversation) {
+            alert("Current conversation ID couldn't be found.")
+            return;
+        }
         const chatData =
-            JSON.parse(document.querySelector(`meta[cai_converExtId="${await getCurrentConverId()}"]`)?.getAttribute('cai_conversation') || 'null');
-
+            JSON.parse(document.querySelector(`meta[cai_converExtId="${currentConversation}"]`)?.getAttribute('cai_conversation') || 'null');
         if (chatData == null) {
             alert("Data doesn't exist or not ready. Try again later.")
             return;
@@ -2034,42 +2131,42 @@
                     }
                 }
 
-                if (AccessToken != null) {
-                    const response = await fetch(fetchUrl, settings);
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch data. Status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    const avatarPath = identity === 'char' ? data.character?.avatar_file_name ?? null : data.user?.user?.account?.avatar_file_name ?? null;
-
-                    if (avatarPath == null || avatarPath == "") {
-                        resolve(null);
-                    } else {
-                        const avatarLink = `https://characterai.io/i/${avatarSize}/static/avatars/${avatarPath}`;
-                        const avatarResponse = await fetch(avatarLink);
-                        if (!avatarResponse.ok) {
-                            throw new Error(`Failed to fetch avatar. Status: ${avatarResponse.status}`);
-                        }
-                        const avifBlob = await avatarResponse.blob();
-
-                        // Create a FileReader to read the blob as a base64 string
-                        const reader = new FileReader();
-
-                        reader.onload = function () {
-                            // The result property contains the base64 string
-                            const base64String = reader.result;
-                            resolve(base64String);
-                        };
-
-                        reader.onerror = function (error) {
-                            reject(error);
-                        };
-
-                        // Read the blob as data URL (base64)
-                        reader.readAsDataURL(avifBlob);
-                    }
-                } else {
+                if (!AccessToken) {
                     resolve(null);
+                }
+
+                const response = await fetch(fetchUrl, settings);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data. Status: ${response.status}`);
+                }
+                const data = await response.json();
+                const avatarPath = identity === 'char' ? data.character?.avatar_file_name ?? null : data.user?.user?.account?.avatar_file_name ?? null;
+
+                if (avatarPath == null || avatarPath == "") {
+                    resolve(null);
+                } else {
+                    const avatarLink = `https://characterai.io/i/${avatarSize}/static/avatars/${avatarPath}`;
+                    const avatarResponse = await fetch(avatarLink);
+                    if (!avatarResponse.ok) {
+                        throw new Error(`Failed to fetch avatar. Status: ${avatarResponse.status}`);
+                    }
+                    const avifBlob = await avatarResponse.blob();
+
+                    // Create a FileReader to read the blob as a base64 string
+                    const reader = new FileReader();
+
+                    reader.onload = function () {
+                        // The result property contains the base64 string
+                        const base64String = reader.result;
+                        resolve(base64String);
+                    };
+
+                    reader.onerror = function (error) {
+                        reject(error);
+                    };
+
+                    // Read the blob as data URL (base64)
+                    reader.readAsDataURL(avifBlob);
                 }
             } catch (error) {
                 reject(error);
@@ -2131,7 +2228,8 @@
     }
 
     function getAccessToken() {
-        return document.querySelector('meta[cai_token]').getAttribute('cai_token');
+        const meta = document.querySelector('meta[cai_token]');
+        return meta ? meta.getAttribute('cai_token') : null;
     }
 
     async function getCurrentConverId() {
@@ -2139,6 +2237,10 @@
             // Get necessary info
             const AccessToken = getAccessToken();
             const charId = getCharId();
+            if (!AccessToken || !charId) {
+                return null;
+            }
+
             const url = new URL(window.location.href);
             const searchParams = new URLSearchParams(url.search);
             const location = getPageType();
@@ -2163,7 +2265,7 @@
             }
             // If legacy recent
             else {
-                const res = await fetch(`https://beta.character.ai/chat/history/continue/`, {
+                const res = await fetch(`https://plus.character.ai/chat/history/continue/`, {
                     method: "POST",
                     headers: {
                         "authorization": AccessToken

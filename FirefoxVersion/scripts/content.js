@@ -305,77 +305,117 @@
         }
     }
 
-    const fetchHistory = async (charId) => {
-        const metaChar = document.querySelector('meta[cai_charid="' + charId + '"]');
+    const fetchHistory = async () => {
         const AccessToken = getAccessToken();
+        const charId = getCharId();
         // Safety check
-        if (metaChar == null || AccessToken == null) {
+        if (!AccessToken || !charId) {
             return;
         }
-
-        // WILL BE UPDATED WITH A PROPER HISTORY FETCH REQUESTS AND ORDERED BY DATE
-
-        const chatList = {
-            history1: JSON.parse(metaChar.getAttribute('cai_history1_chatlist')),
-            history2: JSON.parse(metaChar.getAttribute('cai_history2_chatlist'))
+        let meta = document.querySelector('meta[cai_charId="' + charId + '"]');
+        if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute('cai_charId', charId);
+            document.head.appendChild(meta);
         }
-        if (!chatList.history1 && !chatList.history2) {
+        // Check if fetching process already started for this character
+        if (meta.getAttribute('fetchHistStarted')) {
+            return;
+        }
+        meta.setAttribute('fetchHistStarted', 'true');
+        document.querySelector('.cai_tools-cont .fetchHistory-btn').classList.add('started');
+
+        // Fetch chat lists from legacy and new
+        let chatList = null;
+        try {
+            const res_legacy = await fetch('https://plus.character.ai/chat/character/histories_v2/', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    "authorization": AccessToken
+                },
+                body: JSON.stringify({
+                    external_id: charId,
+                    number: 999
+                })
+            })
+            const res_new = await fetch(`https://neo.character.ai/chats/?character_ids=${charId}&num_preview_turns=2`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    "authorization": AccessToken
+                }
+            })
+            if (res_legacy.ok) {
+                const data = await res_legacy.json();
+                if (data.histories) {
+                    // Filter the empty chats
+                    data.histories = data.histories.filter(chat => chat.msgs?.length > 1 || false);
+                    // Add to list
+                    chatList = [...data.histories.map(chat => ({ id: chat.external_id, date: new Date(chat.created), type: "legacy" }))];
+                }
+            }
+            if (res_new.ok) {
+                const data = await res_new.json();
+                if (data.chats) {
+                    // Filter the empty chats
+                    data.chats = data.chats.filter(chat => chat.preview_turns?.length > 1 || false);
+                    // Add to list
+                    chatList = [...data.chats.map(chat => ({ id: chat.chat_id, date: new Date(chat.create_time), type: "chat2" }))];
+                }
+            }
+        } catch (error) {
+            console.log("CAI Tools error: " + error);
+        }
+
+        if (!chatList) {
             alert("Failed to get history");
             return;
         }
 
-        createFetchStartedMeta("true");
+        // Sort by date in descending order, new chats first
+        chatList.sort((a, b) => b.date - a.date);
+
+        // Fetching process data
         let finalHistory = [];
         let fetchedChatNumber = 1;
-        const historyLength = (chatList.history1?.length || 0) + (chatList.history2?.length || 0);
+        const historyLength = chatList?.length || 0;
 
-        // Fetch chat2 history
-        if (chatList.history2) {
+        // Fetch history
+        for (const chatInfo of chatList) {
+            const { id, date, type } = chatInfo;
             const chatData = { history: [], turns: [] }
-            for (const chatId of chatList.history2) {
-                await fetchMessagesChat2({
-                    AccessToken: AccessToken,
-                    nextToken: null,
-                    converExtId: chatId,
-                    chatData: chatData,
-                    fetchDataType: "history"
-                });
-                fetchedChatNumber++;
-                handleProgressInfoMeta(`(Loading... Chat ${fetchedChatNumber}/${historyLength} completed)`);
-            }
 
-            finalHistory = [...finalHistory, ...chatData.history];
-        }
-
-        // Fetch chat1 history
-        // Will be after chat2 because if there is chat2 then the character is primarily chat2 char
-        if (chatList.history1) {
-            const chatData = { history: [], turns: [] }
-            for (const chatId of chatList.history1) {
+            if (type === "legacy") {
                 await fetchMessagesLegacy({
                     AccessToken: AccessToken,
                     nextPage: 0,
-                    converExtId: chatId,
+                    converExtId: id,
                     chatData: chatData,
                     fetchDataType: "history"
                 });
-                fetchedChatNumber++;
-                handleProgressInfoHist(`(Loading... Chat ${fetchedChatNumber}/${historyLength} completed)`);
+            } else {
+                await fetchMessagesChat2({
+                    AccessToken: AccessToken,
+                    nextToken: null,
+                    converExtId: id,
+                    chatData: chatData,
+                    fetchDataType: "history"
+                });
             }
-
+            // Add to final
             finalHistory = [...finalHistory, ...chatData.history];
+            // Increase the fetched index
+            fetchedChatNumber++;
+            // Update the informative text
+            handleProgressInfoHist(`(Loading history... ${fetchedChatNumber}/${historyLength})`);
         }
 
-        if (document.querySelector('meta[cai_charid="' + charId + '"]')) {
-            document.querySelector('meta[cai_charid="' + charId + '"]')
-                .setAttribute('cai_history', JSON.stringify(finalHistory));
-        }
-        else {
-            const meta = document.createElement('meta');
-            meta.setAttribute('cai_charid', charId);
-            meta.setAttribute('cai_history', JSON.stringify(finalHistory));
-            document.head.appendChild(meta);
-        }
+        // Save history in meta tag
+        meta.setAttribute('cai_history', JSON.stringify(finalHistory));
+        // Update the informative text
         handleProgressInfoHist(`(Ready!)`);
         console.log("FINISHED", finalHistory);
     };
@@ -520,11 +560,11 @@
                         </ul>
                         <h6>History</h6>
                         <div class="history_loading-cont">
-                            <button type="button">Start fetch</button>
+                            <button type="button" class="fetchHistory-btn">Start fetch</button>
                             <span class='cait_progressInfo_Hist'>(Waiting command...)</span>
                         </div>
                         <ul>
-                            <li data-cait_type='cai_offline_read'>Offline History</li>
+                            <li data-cait_type='cai_hist_offline_read'>Offline History</li>
                         </ul>
                     </div>
                 </div>
@@ -688,6 +728,15 @@
         document.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
             const args = { downloadType: 'example_chat' };
             DownloadConversation(args);
+            close_caiToolsModal();
+        });
+
+        document.querySelector('.cai_tools-cont .fetchHistory-btn').addEventListener('click', () => {
+            fetchHistory();
+        });
+        document.querySelector('.cai_tools-cont [data-cait_type="cai_hist_offline_read"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_hist_offline_read' };
+            DownloadHistory(args);
             close_caiToolsModal();
         });
     }
@@ -1707,7 +1756,7 @@
     function DownloadHistory(args) {
         const charId = getCharId();
         const historyData =
-            JSON.parse(document.querySelector('meta[cai_charid="' + charId + '"]')?.getAttribute('cai_history') || 'null');
+            JSON.parse(document.querySelector('meta[cai_charId="' + charId + '"]')?.getAttribute('cai_history') || 'null');
 
         if (historyData == null) {
             alert("Data doesn't exist or not ready. Try again later.")
@@ -1718,7 +1767,7 @@
 
         const dtype = args.downloadType;
         switch (dtype) {
-            case "cai_offline_read":
+            case "cai_hist_offline_read":
                 Download_OfflineReading(historyData);
                 break;
             case "example_chat":

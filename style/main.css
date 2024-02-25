@@ -266,14 +266,19 @@ a[href="#-"] {
     gap: 10px;
 }
 
-.cai_tools .history_loading-cont button {
-    background-color: #585858;
+.cai_tools .fetchHistory-btn {
+    background-color: #454545;
     border-radius: 10px;
     padding: 2px 10px;
 }
 
-.cai_tools .history_loading-cont button:hover {
-    background-color: #454545;
+.cai_tools .fetchHistory-btn:hover {
+    background-color: #585858;
+}
+
+.cai_tools .fetchHistory-btn.started {
+    cursor: default;
+    pointer-events: none;
 }
 
 

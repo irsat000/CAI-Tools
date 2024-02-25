@@ -2,7 +2,7 @@
 
 (() => {
     // These values must be updated when required
-    const extAPI = browser; // chrome / browser
+    const extAPI = chrome; // chrome / browser
     const extVersion = "1.10.0";
 
     const metadata = {
@@ -320,13 +320,16 @@
         }
         // Check if fetching process already started for this character
         if (meta.getAttribute('fetchHistStarted')) {
+            if (meta.getAttribute('cai_history')) {
+                handleProgressInfoHist(`(Ready!)`);
+            }
             return;
         }
         meta.setAttribute('fetchHistStarted', 'true');
         document.querySelector('.cai_tools-cont .fetchHistory-btn').classList.add('started');
 
         // Fetch chat lists from legacy and new
-        let chatList = null;
+        let chatList = [];
         try {
             const res_legacy = await fetch('https://plus.character.ai/chat/character/histories_v2/', {
                 method: 'POST',
@@ -354,7 +357,7 @@
                     // Filter the empty chats
                     data.histories = data.histories.filter(chat => chat.msgs?.length > 1 || false);
                     // Add to list
-                    chatList = [...data.histories.map(chat => ({ id: chat.external_id, date: new Date(chat.created), type: "legacy" }))];
+                    chatList.push(...data.histories.map(chat => ({ id: chat.external_id, date: new Date(chat.created), type: "legacy" })));
                 }
             }
             if (res_new.ok) {
@@ -363,14 +366,14 @@
                     // Filter the empty chats
                     data.chats = data.chats.filter(chat => chat.preview_turns?.length > 1 || false);
                     // Add to list
-                    chatList = [...data.chats.map(chat => ({ id: chat.chat_id, date: new Date(chat.create_time), type: "chat2" }))];
+                    chatList.push(...data.chats.map(chat => ({ id: chat.chat_id, date: new Date(chat.create_time), type: "chat2" })));
                 }
             }
         } catch (error) {
             console.log("CAI Tools error: " + error);
         }
 
-        if (!chatList) {
+        if (!chatList.length) {
             alert("Failed to get history");
             return;
         }

@@ -191,9 +191,29 @@ function addMemoryToMessage(original) {
     }
 }
 
+
 function getCharId() {
-    const url = new URL(window.location.href);
-    const searchParams = new URLSearchParams(url.search);
-    const charId = searchParams.get('char');
-    return charId;
+    const location = getPageType();
+    // If new design
+    if (location === 'character.ai/chat') {
+        // path only: /chat/[charId]
+        return window.location.pathname.split('/')[2];
+    }
+    // If legacy
+    else {
+        // path with query string: /chat?char=[charId]
+        const url = new URL(window.location.href);
+        const searchParams = new URLSearchParams(url.search);
+        const charId = searchParams.get('char');
+        return charId;
+    }
+}
+
+// Get the "identification" of a page
+function getPageType() {
+    // Examples:
+    // character.ai/chat
+    // *.character.ai/chat2
+    // *.character.ai/chat
+    return window.location.hostname + '/' + window.location.pathname.split('/')[1];
 }

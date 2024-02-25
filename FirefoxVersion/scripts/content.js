@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = browser; // chrome / browser
-    const extVersion = "1.9.0";
+    const extVersion = "1.10.0";
 
     const metadata = {
         version: 1,
@@ -23,7 +23,7 @@
     xhookScript.crossOrigin = "anonymous";
     xhookScript.id = "xhook";
     xhookScript.onload = function () {
-        initialize_options_DOM(window.location.pathname);
+        //initialize_options_DOM(window.location.pathname);
     };
     xhookScript.src = xhook_lib__url;
     // Web socket hook
@@ -39,22 +39,32 @@
     firstScript.parentNode.insertBefore(xhookScript, firstScript);
     firstScript.parentNode.insertBefore(wsHookScript, firstScript);
 
-
+    // Run at refresh or start as well
+    handleLocationChange(null, { lastHref: '' });
     // A function to handle mutations
     function handleLocationChange(mutationsList, observer) {
         // Check if the URL has changed
         if (window.location.href !== observer.lastHref) {
             observer.lastHref = window.location.href;
 
+            cleanDOM();
             // Perform actions based on the URL change
-            const path = window.location.pathname;
-            if (path === "/chat" || path === "/chat2" || path === "/histories") {
-                initialize_options_DOM(path);
+            const location = getPageType();
+            // If new design
+            if (location === 'character.ai/chat') {
+                initialize_caitools_legacy();
+            }
+            // If chat2
+            else if (location.includes('.character.ai/chat2')) {
+                initialize_caitools_legacy();
+            }
+            // If legacy chat
+            else if (location.includes('.character.ai/chat') && getCharId()) {
+                initialize_caitools_legacy();
             }
             else {
                 // Handle the modal reset
-                handleProgressInfoMeta("(Loading...)");
-                cleanDOM();
+                //handleProgressInfoMeta("(Loading...)");
             }
         }
     }
@@ -70,11 +80,26 @@
         characterData: false
     });
 
+    // Reveal memory text
+    document.addEventListener('click', (e) => {
+        const el = e.target;
+        if (el.matches('a[href="#-"], a[title]') && el.textContent === "-") {
+            e.preventDefault();
+            el.textContent = el.getAttribute('title');
+            el.dataset.revealed_memory = true;
+        } else if (el.dataset.revealed_memory) {
+            e.preventDefault();
+        }
+    });
 
 
-    // FETCH MESSAGES
+    // FETCH and LOADING ACTIONS
+    function handleProgressInfo(text) {
+        const progressInfo = document.querySelector('.cai_tools-cont .cait_progressInfo');
+        if (progressInfo) progressInfo.textContent = text;
+    }
 
-    function handleProgressInfoMeta(text) {
+    function handleProgressInfoMeta222(text) {
         if (document.querySelector('meta[cait_progressInfo]')) {
             document.querySelector('meta[cait_progressInfo]')
                 .setAttribute('cait_progressInfo', text);
@@ -87,9 +112,7 @@
     }
 
     function cleanDOM() {
-        let container = document.querySelector('.apppage');
-        if (!container) return;
-        container.querySelectorAll('[data-tool="cai_tools"]').forEach(element => {
+        document.querySelectorAll('[data-tool="cai_tools"]').forEach(element => {
             element.remove();
         });
     }
@@ -135,26 +158,26 @@
             meta.setAttribute('cai_conversation', JSON.stringify(newSimplifiedChat));
             document.head.appendChild(meta);
         }
-        handleProgressInfoMeta(`(Ready!)`);
+        handleProgressInfo(`(Ready!)`);
         console.log("FINISHED", newSimplifiedChat);
     }
 
-    const fetchMessages = async ({ AccessToken, nextPage, converExtId, chatData, fetchDataType }) => {
-        console.log(nextPage);
+    const fetchMessagesLegacy = async ({ AccessToken, nextPage, converExtId, chatData, fetchDataType }) => {
         await new Promise(resolve => setTimeout(resolve, 200));
-        let url = `https://${getMembership()}.character.ai/chat/history/msgs/user/?history_external_id=${converExtId}`;
+        let url = `https://plus.character.ai/chat/history/msgs/user/?history_external_id=${converExtId}`;
         if (nextPage > 0) {
             url += `&page_num=${nextPage}`;
         }
-        await fetch(url, {
-            method: "GET",
-            headers: {
-                "authorization": AccessToken
-            }
-        })
-            .then((res) => res.json())
-            .then(async (data) => {
 
+        try {
+            const res = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "authorization": AccessToken
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
                 chatData.turns = [...data.messages, ...chatData.turns];
 
                 if (data.has_more == false) {
@@ -180,41 +203,49 @@
                     // This was the last fetch for the chat
                 }
 
-                await fetchMessages({
+                await fetchMessagesLegacy({
                     AccessToken: AccessToken,
                     nextPage: data.next_page,
                     converExtId: converExtId,
                     chatData: chatData,
                     fetchDataType: fetchDataType
                 });
-            })
-            .catch(async (err) => {
-                console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
+            }
+            else if (res.status === 429) {
+                console.log("Rate limitting error. Will continue after 10 seconds.");
                 await new Promise(resolve => setTimeout(resolve, 10000));
-                return await fetchMessages({
+                return await fetchMessagesLegacy({
                     AccessToken: AccessToken,
                     nextPage: nextPage,
                     converExtId: converExtId,
                     chatData: chatData,
                     fetchDataType: fetchDataType
                 });
-            });
+            }
+            else
+                throw res;
+        } catch (error) {
+            alert("Unexpected CAI Tools error, please report on Github");
+            console.error("Unexpected CAI Tools error: " + error);
+        }
     };
 
     const fetchMessagesChat2 = async ({ AccessToken, nextToken, converExtId, chatData, fetchDataType }) => {
         //Will be similar to fetchMessages. Next token will come from the previous fetch.
         //Last chat will give next token too.
-        //New fetch will repond with null next_token and empty turns.
+        //New fetch will repond with null next_token variable and empty turns.
         await new Promise(resolve => setTimeout(resolve, 200));
         let url = `https://neo.character.ai/turns/${converExtId}/`;
-        await fetch(url + (nextToken ? `?next_token=${nextToken}` : ""), {
-            "method": "GET",
-            "headers": {
-                "authorization": AccessToken,
-            }
-        })
-            .then((res) => res.json())
-            .then(async (data) => {
+
+        try {
+            const res = await fetch(url + (nextToken ? `?next_token=${nextToken}` : ""), {
+                "method": "GET",
+                "headers": {
+                    "authorization": AccessToken,
+                }
+            })
+            if (res.ok) {
+                const data = await res.json();
                 if (data.meta.next_token == null) {
                     const newSimplifiedChat = [];
                     chatData.turns.forEach((msg) => {
@@ -250,9 +281,9 @@
                     chatData: chatData,
                     fetchDataType: fetchDataType
                 });
-            })
-            .catch(async (err) => {
-                console.log("Likely the intentional rate limitting error. Will continue after 10 seconds.");
+            }
+            else if (res.status === 429) {
+                console.log("Rate limitting error. Will continue after 10 seconds.");
                 await new Promise(resolve => setTimeout(resolve, 10000));
                 return await fetchMessagesChat2({
                     AccessToken: AccessToken,
@@ -261,7 +292,13 @@
                     chatData: chatData,
                     fetchDataType: fetchDataType
                 });
-            });
+            }
+            else
+                throw res;
+        } catch (error) {
+            alert("Unexpected CAI Tools error, please report on Github");
+            console.error("Unexpected CAI Tools error: " + error);
+        }
     }
 
     const fetchHistory = async (charId) => {
@@ -271,6 +308,9 @@
         if (metaChar == null || AccessToken == null) {
             return;
         }
+
+        // WILL BE UPDATED WITH A PROPER HISTORY FETCH REQUESTS AND ORDERED BY DATE
+
         const chatList = {
             history1: JSON.parse(metaChar.getAttribute('cai_history1_chatlist')),
             history2: JSON.parse(metaChar.getAttribute('cai_history2_chatlist'))
@@ -308,7 +348,7 @@
         if (chatList.history1) {
             const chatData = { history: [], turns: [] }
             for (const chatId of chatList.history1) {
-                await fetchMessages({
+                await fetchMessagesLegacy({
                     AccessToken: AccessToken,
                     nextPage: 0,
                     converExtId: chatId,
@@ -336,8 +376,7 @@
         console.log("FINISHED", finalHistory);
     };
 
-    const fetchConversation = async (converExtId, pageType) => {
-        createFetchStartedMeta_Conversation("true", converExtId);
+    const fetchConversation = async (converExtId) => {
         const AccessToken = getAccessToken();
         const chatData = { history: [], turns: [] };
         let args = {
@@ -346,13 +385,17 @@
             chatData: chatData,
             fetchDataType: "conversation"
         };
-        if (pageType === "/chat") {
-            args.nextPage = 0;
-            await fetchMessages(args);
-        }
-        else if (pageType === "/chat2") {
+
+        const location = getPageType();
+        // If new design or chat2
+        if (location === 'character.ai/chat' || location.includes('.character.ai/chat2')) {
             args.nextToken = null;
             await fetchMessagesChat2(args);
+        }
+        // If legacy chat
+        else if (location.includes('.character.ai/chat') && getCharId()) {
+            args.nextPage = 0;
+            await fetchMessagesLegacy(args);
         }
     }
 
@@ -360,6 +403,201 @@
 
 
     // CAI Tools - DOM
+
+    function initialize_caitools_legacy() {
+        const BODY = document.getElementsByTagName('BODY')[0];
+
+        // CAI TOOLS Elements
+        const cai_tools_string = `
+            <div class="cait_button-cont" data-tool="cai_tools">
+                <div class="dragCaitBtn">&#9946;</div>
+                <button class="cai_tools-btn">CAI Tools</button>
+            </div>
+            <div class="cai_tools-cont" data-tool="cai_tools">
+                <div class="cai_tools">
+                    <div class="cait-header">
+                        <h4>CAI Tools</h4><span class="cait-close">x</span>
+                    </div>
+                    <a href="https://www.patreon.com/Irsat" target="_blank" class="donate_link">Support me on Patreon</a>
+                    <div class="cait-body">
+                        <span class="cait_warning"></span>
+                        <h6>Character</h6>
+                        <ul>
+                            <li data-cait_type='memory_manager'>Memory Manager</li>
+                            <li data-cait_type='character_hybrid'>Character (json)</li>
+                            <li data-cait_type='character_card'>Character Card (png)</li>
+                            <li data-cait_type='character_settings'>Show settings</li>
+                        </ul>
+                        <h6>This conversation</h6>
+                        <span class='cait_progressInfo'>(Loading...)</span>
+                        <ul>
+                            <li data-cait_type='cai_duplicate_chat'>Create Duplicate <i>(Last 100 msgs)</i></li>
+                            <li data-cait_type='cai_duplicate_chat_full'>Create Duplicate <i>(Full)</i></li>
+                            <li data-cait_type='cai_offline_read'>Offline Chat</li>
+                            <li data-cait_type='example_chat'>Chat as Definition</li>
+                            <li data-cait_type='oobabooga'>Oobabooga chat</li>
+							<li data-cait_type='tavern'>Tavern chat</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="cait_settings-cont" data-tool="cai_tools">
+                <div class="cait_settings">
+                    <div class="caits_header">
+                        <h4>Settings</h4><span class="caits-close">x</span>
+                    </div>
+                    <div class="caits-body">
+                        <pre id="cait_jsonViewer"></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="cait_memory_manager-cont" data-tool="cai_tools" data-import_needed="true">
+                <div class="cait_memory_manager">
+                    <div class="caitmm_header">
+                        <h4>Memory Manager</h4><span class="caitmm-close">x</span>
+                    </div>
+                    <div class="caitmm-body">
+                        <label class="mm_status">Active <input type="checkbox" name="cait_mm_active" unchecked /></label>
+                        <span class="note">Note: 0 frequency means every message.</span>
+                        <span class="reminder-wrap">
+                            Remind every <input type="number" name="remind_frequency" value="5" min="0" max="100" /> messages
+                        </span>
+                        <textarea class="mm_new_memory" name="new_memory" placeholder="New memory (Line breaks are not recommended but will work) (Click "Add New" and "Save")"></textarea>
+                        <button type="button" class="add_new_memory">Add New</button>
+                        <ul class="mm-current_memory_list">
+                        </ul>
+                        <div class="mm-action-cont">
+                            <button type="button" class="cancel">Cancel</button>
+                            <button type="button" class="save">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cait_info-cont" data-tool="cai_tools">
+                <div class="cait_info">
+                    <div class="caiti_header">
+                        <h4>CAI Tools</h4><span class="caiti-close">x</span>
+                    </div>
+                    <div class="caiti-body">
+                    </div>
+                </div>
+            </div>
+        `;
+        BODY.appendChild(parseHTML_caiTools(cai_tools_string));
+
+        // SHOW MODAL
+        document.querySelector('.cai_tools-btn').addEventListener('mouseup', openModal);
+        document.querySelector('.cai_tools-btn').addEventListener('touchstart', openModal);
+        async function openModal() {
+            // Add active class to show
+            document.querySelector('.cai_tools-cont').classList.add('active');
+
+            // Check if the conversation is already fetched
+            let currentConverExtId = await getCurrentConverId();
+            const checkExistingConver = document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`);
+            if (checkExistingConver?.getAttribute('cai_conversation') != null) {
+                handleProgressInfo('(Ready!)')
+                return;
+            }
+            // If fetch didn't start
+            else if (!checkExistingConver?.getAttribute('cai_fetchStarted')) {
+                // Set fetch started to prevent re-fetching
+                if (checkExistingConver) {
+                    checkExistingConver.setAttribute('cai_fetchStarted', 'true');
+                }
+                else {
+                    const meta = document.createElement('meta');
+                    meta.setAttribute('cai_converExtId', currentConverExtId);
+                    meta.setAttribute('cai_fetchStarted', 'true');
+                    document.head.appendChild(meta);
+                }
+                // Fetch conversation
+                fetchConversation(currentConverExtId);
+            }
+        }
+
+        // Close CAI Tools modals
+        document.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
+                close_caiToolsModal();
+            }
+        });
+        document.querySelector('.cait_settings-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cait_settings-cont') || target.classList.contains('caits-close')) {
+                close_caitSettingsModal();
+            }
+        });
+        document.querySelector('.cait_memory_manager-cont').addEventListener('mousedown', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cait_memory_manager-cont') || target.classList.contains('caitmm-close')) {
+                setTimeout(() => {
+                    close_caitMemoryManagerModal();
+                    // To prevent further click by accident, mousedown immediately runs, not when mouse is lifted
+                }, 200);
+            }
+        });
+        document.querySelector('.cait_info-cont').addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('cait_info-cont') || target.classList.contains('caiti-close')) {
+                close_caitInfoModal();
+            }
+        });
+
+        // Features on click
+        document.querySelector('.cai_tools-cont [data-cait_type="memory_manager"]').addEventListener('click', () => {
+            MemoryManager();
+            close_caiToolsModal();
+        });
+
+        document.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_character_hybrid' };
+            DownloadCharacter(args);
+            close_caiToolsModal();
+        });
+        document.querySelector('.cai_tools-cont [data-cait_type="character_card"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_character_card' };
+            DownloadCharacter(args);
+            close_caiToolsModal();
+        });
+        document.querySelector('.cai_tools-cont [data-cait_type="character_settings"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_character_settings' };
+            DownloadCharacter(args);
+            close_caiToolsModal();
+        });
+
+        document.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_offline_read' };
+            DownloadConversation(args);
+            close_caiToolsModal();
+        });
+        document.querySelector('.cai_tools-cont [data-cait_type="cai_duplicate_chat"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_duplicate_chat' };
+            DownloadConversation(args);
+            close_caiToolsModal();
+        });
+        document.querySelector('.cai_tools-cont [data-cait_type="cai_duplicate_chat_full"]').addEventListener('click', () => {
+            const args = { downloadType: 'cai_duplicate_chat_full' };
+            DownloadConversation(args);
+            close_caiToolsModal();
+        });
+        document.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
+            const args = { downloadType: 'oobabooga' };
+            DownloadConversation(args);
+            close_caiToolsModal();
+        });
+        document.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
+            const args = { downloadType: 'tavern' };
+            DownloadConversation(args);
+            close_caiToolsModal();
+        });
+        document.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
+            const args = { downloadType: 'example_chat' };
+            DownloadConversation(args);
+            close_caiToolsModal();
+        });
+    }
 
     function initialize_options_DOM(path) {
         if (path === '/histories') {
@@ -481,10 +719,10 @@
         container.querySelector('.cai_tools-btn').addEventListener('mouseup', clickOnBtn);
         container.querySelector('.cai_tools-btn').addEventListener('touchstart', clickOnBtn);
 
-        function clickOnBtn() {
+        async function clickOnBtn() {
             container.querySelector('.cai_tools-cont').classList.add('active');
 
-            let currentConverExtId = getCurrentConverId();
+            let currentConverExtId = await getCurrentConverId();
             const checkExistingConver = document.querySelector(`meta[cai_converExtId="${currentConverExtId}"]`);
 
             const converStatusInterval = setInterval(() => {
@@ -518,27 +756,27 @@
         container.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
             const target = event.target;
             if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
-                close_caiToolsModal(container);
+                close_caiToolsModal();
             }
         });
         container.querySelector('.cait_settings-cont').addEventListener('click', (event) => {
             const target = event.target;
             if (target.classList.contains('cait_settings-cont') || target.classList.contains('caits-close')) {
-                close_caitSettingsModal(container);
+                close_caitSettingsModal();
             }
         });
         container.querySelector('.cait_memory_manager-cont').addEventListener('mousedown', (event) => {
             const target = event.target;
             if (target.classList.contains('cait_memory_manager-cont') || target.classList.contains('caitmm-close')) {
                 setTimeout(() => {
-                    close_caitMemoryManagerModal(container);
+                    close_caitMemoryManagerModal();
                     // To prevent further click by accident, mousedown immediately runs, not when mouse is lifted
                 }, 200);
             }
 
             /* Alternative to accidents
             container.querySelector('.caitmm-close').addEventListener('click', () => {
-                close_caitMemoryManagerModal(container);
+                close_caitMemoryManagerModal();
             });*/
         });
         container.querySelector('.cait_info-cont').addEventListener('click', (event) => {
@@ -551,54 +789,54 @@
         // Features on click
         container.querySelector('.cai_tools-cont [data-cait_type="memory_manager"]').addEventListener('click', () => {
             MemoryManager();
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
 
         container.querySelector('.cai_tools-cont [data-cait_type="character_hybrid"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_hybrid' };
             DownloadCharacter(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
         container.querySelector('.cai_tools-cont [data-cait_type="character_card"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_card' };
             DownloadCharacter(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
         container.querySelector('.cai_tools-cont [data-cait_type="character_settings"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_settings' };
             DownloadCharacter(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
 
         container.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_offline_read' };
             DownloadConversation(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
         container.querySelector('.cai_tools-cont [data-cait_type="cai_duplicate_chat"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_duplicate_chat' };
             DownloadConversation(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
         container.querySelector('.cai_tools-cont [data-cait_type="cai_duplicate_chat_full"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_duplicate_chat_full' };
             DownloadConversation(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
         container.querySelector('.cai_tools-cont [data-cait_type="oobabooga"]').addEventListener('click', () => {
             const args = { downloadType: 'oobabooga' };
             DownloadConversation(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
         container.querySelector('.cai_tools-cont [data-cait_type="tavern"]').addEventListener('click', () => {
             const args = { downloadType: 'tavern' };
             DownloadConversation(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
         container.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
             const args = { downloadType: 'example_chat' };
             DownloadConversation(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
     }
 
@@ -655,7 +893,7 @@
         container.querySelector('.cai_tools-cont').addEventListener('click', (event) => {
             const target = event.target;
             if (target.classList.contains('cai_tools-cont') || target.classList.contains('cait-close')) {
-                close_caiToolsModal(container);
+                close_caiToolsModal();
             }
         });
 
@@ -683,33 +921,29 @@
         container.querySelector('.cai_tools-cont [data-cait_type="cai_offline_read"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_offline_read' };
             DownloadHistory(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
         container.querySelector('.cai_tools-cont [data-cait_type="example_chat"]').addEventListener('click', () => {
             const args = { downloadType: 'example_chat' };
             DownloadHistory(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
         container.querySelector('.cai_tools-cont [data-cait_type="cai_tavern_history"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_tavern_history' };
             DownloadHistory(args);
-            close_caiToolsModal(container);
+            close_caiToolsModal();
         });
 
     }
 
-    // I don't know why I am using "container." instead of "document."
-    function close_caiToolsModal(container) {
-        container.querySelector('.cai_tools-cont').classList.remove('active');
+    function close_caiToolsModal() {
+        document.querySelector('.cai_tools-cont').classList.remove('active');
     }
-    function close_caitSettingsModal(container) {
-        container.querySelector('.cait_settings-cont').classList.remove('active');
+    function close_caitSettingsModal() {
+        document.querySelector('.cait_settings-cont').classList.remove('active');
     }
-    function close_caitMemoryManagerModal(container) {
-        if (container)
-            container.querySelector('.cait_memory_manager-cont').classList.remove('active');
-        else
-            document.querySelector('.cait_memory_manager-cont').classList.remove('active');
+    function close_caitMemoryManagerModal() {
+        document.querySelector('.cait_memory_manager-cont').classList.remove('active');
     }
     function close_caitInfoModal() {
         document.querySelector('.cait_info-cont').classList.remove('active');
@@ -856,9 +1090,9 @@
 
 
     // CONVERSATION
-    function DownloadConversation(args) {
+    async function DownloadConversation(args) {
         const chatData =
-            JSON.parse(document.querySelector(`meta[cai_converExtId="${getCurrentConverId()}"]`)?.getAttribute('cai_conversation') || 'null');
+            JSON.parse(document.querySelector(`meta[cai_converExtId="${await getCurrentConverId()}"]`)?.getAttribute('cai_conversation') || 'null');
 
         if (chatData == null) {
             alert("Data doesn't exist or not ready. Try again later.")
@@ -933,6 +1167,7 @@
             }
             // Initialize link here
             let newChatPage = null;
+            let newChatPage_Redesign = null;
             // Create new connection
             const socket = new WebSocket("wss://neo.character.ai/ws/");
             let msgIndex = 0;
@@ -1009,7 +1244,8 @@
                     chatId = wsdata.chat.chat_id;
                     // Store to give user later
                     newChatPage = `https://${getMembership()}.character.ai/chat2?char=${charId}&hist=${chatId}`;
-                    console.log(newChatPage);
+                    newChatPage_Redesign = `https://character.ai/chat/${charId}?hist=${chatId}`;
+                    console.log(newChatPage, newChatPage_Redesign);
                     chatIsCreated = true;
                 }
                 else if (wsdata.command === "remove_turns_response") {
@@ -1109,7 +1345,15 @@
                     else if (msgIndex >= chatData.length) {
                         // Stop if the original chat came to an end
                         // And update the info modal with link
-                        infoBody.innerHTML = `<p>Complete! Duplicate chat;<br /><a href="${newChatPage}" target="_blank">${newChatPage}</a></p>`;
+                        infoBody.innerHTML = `
+                            <p>
+                                Complete! Duplicate chat;
+                                <br /><br />
+                                <a href="${newChatPage}" target="_blank">Old design chat link</a>
+                                <br /><br />
+                                <a href="${newChatPage_Redesign}" target="_blank">Redesign chat link</a>
+                            </p>
+                        `;
                         return
                     };
 
@@ -1401,7 +1645,6 @@
 
 
     async function Download_OfflineReading(data) {
-        //const username = document.querySelector(`meta[cait_user]`)?.getAttribute('cait_user') || 'Guest';
         let default_character_name = data[0]?.name ?? data[data.length - 1]?.[0]?.name ?? data[0]?.[0]?.name;
         if (!default_character_name) {
             alert("Couldn't get the character's name");
@@ -1523,7 +1766,7 @@
     // CHARACTER DOWNLOAD
 
     function DownloadCharacter(args) {
-        const fetchUrl = "https://" + getMembership() + ".character.ai/chat/character/";
+        const fetchUrl = "https://plus.character.ai/chat/character/";
         const AccessToken = getAccessToken();
         const charId = getCharId();
         const payload = { external_id: charId }
@@ -1552,7 +1795,7 @@
                 if (!data.character || data.character.length === 0) {
                     // No permission because it's someone else's character
                     // /chat/character/info/ instead of /chat/character/ fixes that
-                    const newUrl = "https://" + getMembership() + ".character.ai/chat/character/info/";
+                    const newUrl = "https://plus.character.ai/chat/character/info/";
                     // To guarantee running once
                     if (fetchUrl != newUrl) {
                         console.log("Trying other character fetch method...");
@@ -1738,7 +1981,7 @@
     async function getUserId(settings = { withUsername: false }) {
         const AccessToken = getAccessToken();
         if (!AccessToken) return null;
-        return await fetch(`https://${getMembership()}.character.ai/chat/user/`, {
+        return await fetch(`https://plus.character.ai/chat/user/`, {
             method: "GET",
             headers: {
                 'Accept': 'application/json',
@@ -1773,7 +2016,7 @@
         return new Promise(async (resolve, reject) => {
             try {
                 const AccessToken = getAccessToken();
-                const fetchUrl = identity === 'char' ? `https://${getMembership()}.character.ai/chat/character/info/` : `https://${getMembership()}.character.ai/chat/user/`;
+                const fetchUrl = identity === 'char' ? `https://plus.character.ai/chat/character/info/` : `https://plus.character.ai/chat/user/`;
                 const settings = identity === 'char' ? {
                     method: "POST",
                     headers: {
@@ -1849,10 +2092,33 @@
     };
 
     function getCharId() {
-        const url = new URL(window.location.href);
-        const searchParams = new URLSearchParams(url.search);
-        const charId = searchParams.get('char');
-        return charId;
+        const location = getPageType();
+        // If new design
+        if (location === 'character.ai/chat') {
+            // path only: /chat/[charId]
+            return window.location.pathname.split('/')[2];
+        }
+        // If legacy
+        else {
+            // path with query string: /chat?char=[charId]
+            const url = new URL(window.location.href);
+            const searchParams = new URLSearchParams(url.search);
+            const charId = searchParams.get('char');
+            return charId;
+        }
+    }
+
+    // Get the "identification" of a page
+    function getPageType() {
+        // Examples:
+        // character.ai/chat
+        // *.character.ai/chat2
+        // *.character.ai/chat
+        return window.location.hostname + '/' + window.location.pathname.split('/')[1];
+    }
+    // Get the progress info from cai tools box, such as "(Ready!)" or "(Loading...)"
+    function getProgressInfo() {
+        return document.querySelector('.cai_tools-cont .cait_progressInfo')?.textContent;
     }
 
     // Might be unnecessary when I have getMembership()
@@ -1868,8 +2134,54 @@
         return document.querySelector('meta[cai_token]').getAttribute('cai_token');
     }
 
-    function getCurrentConverId() {
-        return document.querySelector(`meta[cai_charid="${getCharId()}"][cai_currentConverExtId]`)?.getAttribute('cai_currentConverExtId');
+    async function getCurrentConverId() {
+        try {
+            // Get necessary info
+            const AccessToken = getAccessToken();
+            const charId = getCharId();
+            const url = new URL(window.location.href);
+            const searchParams = new URLSearchParams(url.search);
+            const location = getPageType();
+
+            // If history id is in the query strings
+            const historyId = searchParams.get('hist');
+            if (historyId) {
+                return historyId;
+            }
+            // If user opened the recent chat, and if the page new design or chat2
+            else if (location === 'character.ai/chat' || location.includes('.character.ai/chat2')) {
+                const res = await fetch(`https://neo.character.ai/chats/recent/${charId}`, {
+                    method: "GET",
+                    headers: {
+                        "authorization": AccessToken
+                    }
+                })
+                if (res.ok) {
+                    const data = await res.json();
+                    return data.chats[0].chat_id;
+                }
+            }
+            // If legacy recent
+            else {
+                const res = await fetch(`https://beta.character.ai/chat/history/continue/`, {
+                    method: "POST",
+                    headers: {
+                        "authorization": AccessToken
+                    },
+                    body: JSON.stringify({
+                        character_external_id: charId,
+                        history_external_id: null
+                    })
+                })
+                if (res.ok) {
+                    const data = await res.json();
+                    return data.external_id;
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
     }
 
     function parseHTML_caiTools(html) {

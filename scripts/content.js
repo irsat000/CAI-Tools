@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "1.9.0";
+    const extVersion = "1.10.0";
 
     const metadata = {
         version: 1,
@@ -94,14 +94,9 @@
 
 
     // FETCH and LOADING ACTIONS
-    function getPageType() {
-        return window.location.hostname + '/' + window.location.pathname.split('/')[1];
-    }
     function handleProgressInfo(text) {
-        document.querySelector('.cai_tools-cont .cait_progressInfo').textContent = text;
-    }
-    function getProgressInfo() {
-        return document.querySelector('.cai_tools-cont .cait_progressInfo')?.textContent;
+        const progressInfo = document.querySelector('.cai_tools-cont .cait_progressInfo');
+        if (progressInfo) progressInfo.textContent = text;
     }
 
     function handleProgressInfoMeta222(text) {
@@ -467,7 +462,7 @@
                         <span class="reminder-wrap">
                             Remind every <input type="number" name="remind_frequency" value="5" min="0" max="100" /> messages
                         </span>
-                        <textarea class="mm_new_memory" name="new_memory" placeholder="New memory (Line breaks are not recommended but will work)"></textarea>
+                        <textarea class="mm_new_memory" name="new_memory" placeholder="New memory (Line breaks are not recommended but will work) (Click "Add New" and "Save")"></textarea>
                         <button type="button" class="add_new_memory">Add New</button>
                         <ul class="mm-current_memory_list">
                         </ul>
@@ -478,7 +473,7 @@
                     </div>
                 </div>
             </div>
-            <div class="cait_info-cont">
+            <div class="cait_info-cont" data-tool="cai_tools">
                 <div class="cait_info">
                     <div class="caiti_header">
                         <h4>CAI Tools</h4><span class="caiti-close">x</span>
@@ -1172,6 +1167,7 @@
             }
             // Initialize link here
             let newChatPage = null;
+            let newChatPage_Redesign = null;
             // Create new connection
             const socket = new WebSocket("wss://neo.character.ai/ws/");
             let msgIndex = 0;
@@ -1247,8 +1243,9 @@
                     }
                     chatId = wsdata.chat.chat_id;
                     // Store to give user later
-                    newChatPage = `https://plus.character.ai/chat2?char=${charId}&hist=${chatId}`;
-                    console.log(newChatPage);
+                    newChatPage = `https://${getMembership()}.character.ai/chat2?char=${charId}&hist=${chatId}`;
+                    newChatPage_Redesign = `https://character.ai/chat/${charId}?hist=${chatId}`;
+                    console.log(newChatPage, newChatPage_Redesign);
                     chatIsCreated = true;
                 }
                 else if (wsdata.command === "remove_turns_response") {
@@ -1348,7 +1345,15 @@
                     else if (msgIndex >= chatData.length) {
                         // Stop if the original chat came to an end
                         // And update the info modal with link
-                        infoBody.innerHTML = `<p>Complete! Duplicate chat;<br /><a href="${newChatPage}" target="_blank">${newChatPage}</a></p>`;
+                        infoBody.innerHTML = `
+                            <p>
+                                Complete! Duplicate chat;
+                                <br /><br />
+                                <a href="${newChatPage}" target="_blank">Old design chat link</a>
+                                <br /><br />
+                                <a href="${newChatPage_Redesign}" target="_blank">Redesign chat link</a>
+                            </p>
+                        `;
                         return
                     };
 
@@ -2101,6 +2106,19 @@
             const charId = searchParams.get('char');
             return charId;
         }
+    }
+
+    // Get the "identification" of a page
+    function getPageType() {
+        // Examples:
+        // character.ai/chat
+        // *.character.ai/chat2
+        // *.character.ai/chat
+        return window.location.hostname + '/' + window.location.pathname.split('/')[1];
+    }
+    // Get the progress info from cai tools box, such as "(Ready!)" or "(Loading...)"
+    function getProgressInfo() {
+        return document.querySelector('.cai_tools-cont .cait_progressInfo')?.textContent;
     }
 
     // Might be unnecessary when I have getMembership()

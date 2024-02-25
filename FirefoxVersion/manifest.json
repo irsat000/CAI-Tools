@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "CAI Tools",
     "description": "Character.AI now has extra features. Memory Manager, cloning your chats to explore different routes, saving chats and characters!",
-    "version": "1.9.0",
+    "version": "1.10.0",
     "icons": {
         "128": "/logo128.png"
     },

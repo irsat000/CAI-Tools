@@ -6,6 +6,15 @@ a[href="#-"] {
     display: none;
 }*/
 
+[data-tool="cai_tools"] a {
+    color: #0085ff;
+}
+
+[data-tool="cai_tools"] a:hover {
+    text-decoration: underline;
+}
+
+
 a[href="#-"] {
     text-decoration: none;
 }

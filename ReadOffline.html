@@ -113,6 +113,7 @@
             width: 100%;
             height: 100vh;
             background-color: rgba(0, 0, 0, 0.6);
+            z-index: 100;
         }
 
         nav {
@@ -209,6 +210,12 @@
 
         .history_item p {
             font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .history_item p .chat-date {
+            font-style: italic;
+            font-size: 1.3rem;
+            margin-bottom: 6px;
         }
 
         /*nav .char-item {
@@ -595,7 +602,7 @@
             // Get and write the first chat
             const openChat = (index) => {
                 chat.innerHTML = "";
-                historyData.history[index].forEach(msg => {
+                historyData.history[index].chat.forEach(msg => {
                     const clone = msgItemTemplate.content.cloneNode(true);
 
                     // Check avatar
@@ -628,7 +635,7 @@
                     closeDrawer();
                 });
                 const historyContent = document.createElement('p');
-                historyContent.innerHTML = parseMessageText(decodeURIComponent(chat[chat.length - 1].message));
+                historyContent.innerHTML = `<span class="chat-date">${formatDate(chat.date)}</span><br /><br />` + parseMessageText(decodeURIComponent(chat.chat[chat.chat.length - 1].message));
                 historyItem.appendChild(historyContent);
                 historyList.appendChild(historyItem);
             });
@@ -647,6 +654,20 @@
                 message = message.replace(/\n/g, '<br>');
 
                 return message;
+            }
+
+            function formatDate(dateString) {
+                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+                const date = new Date(dateString);
+                const year = date.getFullYear();
+                const monthIndex = date.getMonth();
+                const monthName = months[monthIndex];
+                const day = String(date.getDate()).padStart(2, '0');
+                const hour = String(date.getHours()).padStart(2, '0');
+                const minute = String(date.getMinutes()).padStart(2, '0');
+
+                return `${year} ${monthName} ${day} - ${hour}:${minute}`;
             }
         }, false);
     </script>

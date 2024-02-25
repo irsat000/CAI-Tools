@@ -199,7 +199,7 @@
                         applyConversationMeta(converExtId, newSimplifiedChat);
                     }
                     else if (fetchDataType === "history") {
-                        chatData.history.push(newSimplifiedChat);
+                        chatData.history = newSimplifiedChat;
                         chatData.turns = [];
                     }
 
@@ -267,7 +267,7 @@
                         applyConversationMeta(converExtId, newSimplifiedChat);
                     }
                     else if (fetchDataType === "history") {
-                        chatData.history.push(newSimplifiedChat);
+                        chatData.history = newSimplifiedChat;
                         chatData.turns = [];
                     }
 
@@ -406,7 +406,7 @@
                 });
             }
             // Add to final
-            finalHistory = [...finalHistory, ...chatData.history];
+            finalHistory.push({ date: date, chat: chatData.history });
             // Increase the fetched index
             fetchedChatNumber++;
             // Update the informative text
@@ -1791,7 +1791,7 @@
 
 
     async function Download_OfflineReading(data) {
-        let default_character_name = data[0]?.name ?? data[data.length - 1]?.[0]?.name ?? data[0]?.[0]?.name;
+        let default_character_name = data[0]?.name ?? data[data.length - 1]?.chat[0]?.name ?? data[0]?.chat[0]?.name;
         if (!default_character_name) {
             alert("Couldn't get the character's name");
         }
@@ -1800,19 +1800,18 @@
 
         let offlineHistory = [];
 
-        if (Array.isArray(data[0])) {
+        if (Array.isArray(data[0].chat)) {
             // This is from history
             data.forEach(chat => {
-                const current_character_name = chat[0].name;
                 const chatTemp = [];
-                chat.forEach(msg => chatTemp.push({ isUser: msg.name != current_character_name, name: msg.name, message: encodeURIComponent(msg.message) }));
-                offlineHistory.push(chatTemp);
+                chat.chat.forEach(msg => chatTemp.push({ isUser: msg.isHuman, name: msg.name, message: encodeURIComponent(msg.message) }));
+                offlineHistory.push({ date: chat.date, chat: chatTemp });
             });
         } else {
             // This is from conversation
             const chatTemp = [];
-            data.forEach(msg => chatTemp.push({ isUser: msg.name != default_character_name, name: msg.name, message: encodeURIComponent(msg.message) }));
-            offlineHistory.push(chatTemp);
+            data.forEach(msg => chatTemp.push({ isUser: msg.isHuman, name: msg.name, message: encodeURIComponent(msg.message) }));
+            offlineHistory.push({ date: data[0].date, chat: chatTemp });
         }
 
         const finalData = {
@@ -1837,7 +1836,7 @@
 
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = default_character_name.replaceAll(' ', '_') + '_Offline.html';
+                link.download = default_character_name ? default_character_name.replaceAll(' ', '_') + '_Offline.html' : 'Offline_Chat.html';
                 link.click();
             }
         };

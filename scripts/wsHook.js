@@ -181,7 +181,7 @@ function addMemoryToMessage(original) {
         const charMemories = checkMemoryManager("getList");
         // Push the memories
         charMemories.forEach(memory => {
-            memoryPart += `[-](#- "Memory refresh: ${formatMemory(memory)}")\n`;
+            memoryPart += `[-](#- "Memory: ${formatMemory(memory)}")\n`;
         });
         // Merge and send
         return memoryPart + original;

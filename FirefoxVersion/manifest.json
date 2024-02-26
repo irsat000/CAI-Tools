@@ -2,14 +2,13 @@
     "manifest_version": 2,
     "name": "CAI Tools",
     "description": "Character.AI now has extra features. Memory Manager, cloning your chats to explore different routes, saving chats and characters!",
-    "version": "1.10.0",
+    "version": "2.0.0",
     "icons": {
         "128": "/logo128.png"
     },
     "permissions": [
         "https://characterai.io/*",
-        "https://neo.character.ai/*",
-        "unlimitedStorage"
+        "https://neo.character.ai/*"
     ],
     "background": {
         "scripts": [
@@ -25,7 +24,8 @@
         {
             "matches": [
                 "https://beta.character.ai/*",
-                "https://plus.character.ai/*"
+                "https://plus.character.ai/*",
+                "https://character.ai/*"
             ],
             "js": [
                 "/scripts/crc32.min.js",

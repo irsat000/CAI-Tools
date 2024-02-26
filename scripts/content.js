@@ -476,7 +476,7 @@
                         <span class="reminder-wrap">
                             Remind every <input type="number" name="remind_frequency" value="5" min="0" max="100" /> messages
                         </span>
-                        <textarea class="mm_new_memory" name="new_memory" placeholder="New memory (Line breaks are not recommended but will work) (Click "Add New" and "Save")"></textarea>
+                        <textarea class="mm_new_memory" name="new_memory" placeholder='New memory (Line breaks are not recommended but will work) (Click "Add New" and "Save")'></textarea>
                         <button type="button" class="add_new_memory">Add New</button>
                         <ul class="mm-current_memory_list">
                         </ul>

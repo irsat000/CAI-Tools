@@ -643,16 +643,12 @@
             function parseMessageText(message) {
                 // Replace ***text*** with bold-italic
                 message = message.replace(/\*\*\*([\s\S]*?)\*\*\*/g, '<span class="bold-italic">$1</span>');
-
                 // Replace **text** with bold
                 message = message.replace(/\*\*([\s\S]*?)\*\*/g, '<span class="bold">$1</span>');
-
                 // Replace *text* with italic
                 message = message.replace(/\*([\s\S]*?)\*/g, '<span class="italic">$1</span>');
-
                 // Replace newline (\n) with line break (<br>)
                 message = message.replace(/\n/g, '<br>');
-
                 return message;
             }
 

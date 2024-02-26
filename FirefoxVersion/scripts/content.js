@@ -578,7 +578,8 @@
                         <h4>Settings</h4><span class="caits-close">x</span>
                     </div>
                     <div class="caits-body">
-                        <pre id="cait_jsonViewer"></pre>
+                        <div class="caits-content">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2084,35 +2085,33 @@
                         });
                 }
                 else if (downloadType === "cai_character_settings") {
-                    const viewerPre = document.getElementById("cait_jsonViewer");
-                    if (viewerPre) {
-                        viewerPre.innerHTML = "";
+                    // Get character info
+                    let { name, title, description, greeting, avatar_file_name, definition } = data.character;
+                    const avatarLink = avatar_file_name && avatar_file_name.length > 0
+                        ? `https://characterai.io/i/400/static/avatars/${avatar_file_name}`
+                        : null;
 
-                        for (let prop in data.character) {
-                            if (data.character.hasOwnProperty(prop)) {
-                                if (prop === "categories" && data.character["categories"]) {
-                                    const cates = data.character["categories"];
-                                    let line = `<span class="cait_jv_prop">categories:</span> `;
-                                    for (let i = 0; i < cates.length; i++) {
-                                        line += cates[i].description + " - ";
-                                    }
-                                    line += "\r\n";
-                                    viewerPre.innerHTML += line.replace(/\r/g, '&#13;').replace(/\n/g, '&#10;');
-                                }
-                                else {
-                                    const line = `<span class="cait_jv_prop">${prop}:</span> ${data.character[prop]}\r\n`;
-                                    viewerPre.innerHTML += line.replace(/\r/g, '&#13;').replace(/\n/g, '&#10;');
-                                }
-                                viewerPre.innerHTML += "<br />";
-                            }
-                        }
+                    // Populate
+                    const settingsContent = `
+                        <span class="caits_field_name">Name</span>
+                        <p>${name}</p>
+                        <span class="caits_field_name">Short Description</span>
+                        <p>${title}</p>
+                        <span class="caits_field_name">Long Description</span>
+                        <p>${description}</p>
+                        <span class="caits_field_name">Greeting</span>
+                        <p>${greeting}</p>
+                        <span class="caits_field_name">Avatar Link</span>
+                        <p>${avatarLink ? `<a href="${avatarLink}" target="_blank">${avatarLink}</a>` : '(No avatar)'}</p>
+                        <span class="caits_field_name">Definition</span>
+                        <p>${definition == null ? '(Definition is private)' : definition.trim().length === 0 ? '(Empty)' : parseMessageText(definition)}</p>
+                    `;
 
-                        viewerPre.closest('.cait_settings-cont').classList.add('active');
-                        // viewerPre.innerHTML = JSON.stringify(data.character, null, 2); // Alternative
-                    }
-                    else {
-                        alert("Error while trying to show settings.")
-                    }
+                    // Container
+                    const settingsContainer = document.querySelector(".cait_settings .caits-content");
+                    if (!settingsContainer) return; // Not necessary
+                    settingsContainer.innerHTML = settingsContent;
+                    settingsContainer.closest('.cait_settings-cont').classList.add('active');
                 }
             })
             .catch(err => console.log(err));
@@ -2369,6 +2368,18 @@
         content.querySelector(".dragCaitBtn").addEventListener("touchstart", handleTapToDisable);
 
         return content;
+    }
+
+    function parseMessageText(message) {
+        // Replace ***text*** with bold-italic
+        message = message.replace(/\*\*\*([\s\S]*?)\*\*\*/g, '<span class="bold-italic">$1</span>');
+        // Replace **text** with bold
+        message = message.replace(/\*\*([\s\S]*?)\*\*/g, '<span class="bold">$1</span>');
+        // Replace *text* with italic
+        message = message.replace(/\*([\s\S]*?)\*/g, '<span class="italic">$1</span>');
+        // Replace newline (\n) with line break (<br>)
+        message = message.replace(/\n/g, '<br>');
+        return message;
     }
 
     function makeDraggable(elmnt) {

@@ -3,7 +3,7 @@
 (() => {
     // These values must be updated when required
     const extAPI = chrome; // chrome / browser
-    const extVersion = "2.0.0";
+    const extVersion = "2.1.0";
 
     const metadata = {
         version: 1,
@@ -432,6 +432,7 @@
                             <li data-cait_type='character_hybrid'>Character (json)</li>
                             <li data-cait_type='character_card'>Character Card (png)</li>
                             <li data-cait_type='character_settings'>Show settings</li>
+                            <li data-cait_type='character_copy'>Make Private Copy</li>
                         </ul>
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
@@ -582,6 +583,11 @@
         });
         document.querySelector('.cai_tools-cont [data-cait_type="character_settings"]').addEventListener('click', () => {
             const args = { downloadType: 'cai_character_settings' };
+            DownloadCharacter(args);
+            close_caiToolsModal();
+        });
+        document.querySelector('.cai_tools-cont [data-cait_type="character_copy"]').addEventListener('click', () => {
+            const args = { downloadType: 'character_copy' };
             DownloadCharacter(args);
             close_caiToolsModal();
         });
@@ -1498,20 +1504,23 @@
                     return;
                 }
 
+                // Get character info
+                let { name, title, description, greeting, avatar_file_name, definition, categories } = data.character;
+
                 if (downloadType === "cai_character_hybrid") {
                     const hybridCharacter = {
-                        char_name: data.character.name,
-                        char_persona: data.character.description,
-                        char_greeting: data.character.greeting,
+                        char_name: name,
+                        char_persona: description,
+                        char_greeting: greeting,
                         world_scenario: "",
-                        example_dialogue: data.character.definition ?? "",
+                        example_dialogue: definition ?? "",
 
-                        name: data.character.name,
-                        description: data.character.description,
-                        first_mes: data.character.greeting,
+                        name: name,
+                        description: description,
+                        first_mes: greeting,
                         scenario: "",
-                        mes_example: data.character.definition ?? "",
-                        personality: data.character.title,
+                        mes_example: definition ?? "",
+                        personality: title,
 
                         metadata: metadata
                     }
@@ -1521,30 +1530,30 @@
                     const downloadUrl = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = downloadUrl;
-                    link.download = data.character.name.replaceAll(' ', '_') + '.json';
+                    link.download = name.replaceAll(' ', '_') + '.json';
                     link.click();
                 }
                 else if (downloadType === "cai_character_card") {
-                    if (data.character.avatar_file_name == null ||
-                        data.character.avatar_file_name == "" ||
-                        data.character.avatar_file_name.length == 0
+                    if (avatar_file_name == null ||
+                        avatar_file_name == "" ||
+                        avatar_file_name.length == 0
                     ) {
                         alert("Only works on characters who have an avatar.")
                         return;
                     }
 
                     const cardCharacter = {
-                        name: data.character.name,
-                        description: data.character.description,
-                        first_mes: data.character.greeting,
+                        name: name,
+                        description: description,
+                        first_mes: greeting,
                         scenario: "",
-                        mes_example: data.character.definition ?? "",
-                        personality: data.character.title,
+                        mes_example: definition ?? "",
+                        personality: title,
 
                         metadata: metadata
                     }
 
-                    const avatarLink = `https://characterai.io/i/400/static/avatars/${data.character.avatar_file_name}`;
+                    const avatarLink = `https://characterai.io/i/400/static/avatars/${avatar_file_name}`;
 
                     const charInfo = JSON.stringify(cardCharacter, undefined, '\t');
 
@@ -1618,7 +1627,7 @@
                                         const newDataBlob = new Blob([new Uint8Array(combinedData).buffer], { type: 'image/png' });
                                         const link = document.createElement('a');
                                         link.href = URL.createObjectURL(newDataBlob);
-                                        link.download = data.character.name ?? 'character_card.png';
+                                        link.download = name ?? 'character_card.png';
                                         link.click();
                                     };
                                     fileReader.readAsArrayBuffer(canvasBlob);
@@ -1630,8 +1639,6 @@
                         });
                 }
                 else if (downloadType === "cai_character_settings") {
-                    // Get character info
-                    let { name, title, description, greeting, avatar_file_name, definition } = data.character;
                     const avatarLink = avatar_file_name && avatar_file_name.length > 0
                         ? `https://characterai.io/i/400/static/avatars/${avatar_file_name}`
                         : null;
@@ -1643,9 +1650,9 @@
                         <span class="caits_field_name">Short Description</span>
                         <p>${title}</p>
                         <span class="caits_field_name">Long Description</span>
-                        <p>${description}</p>
+                        <p>${description.trim().length === 0 ? '(Empty)' : description}</p>
                         <span class="caits_field_name">Greeting</span>
-                        <p>${greeting}</p>
+                        <p>${parseMessageText(greeting)}</p>
                         <span class="caits_field_name">Avatar Link</span>
                         <p>${avatarLink ? `<a href="${avatarLink}" target="_blank">${avatarLink}</a>` : '(No avatar)'}</p>
                         <span class="caits_field_name">Definition</span>
@@ -1657,6 +1664,53 @@
                     if (!settingsContainer) return; // Not necessary
                     settingsContainer.innerHTML = settingsContent;
                     settingsContainer.closest('.cait_settings-cont').classList.add('active');
+                }
+                else if (downloadType === "character_copy") {
+                    const payload = {
+                        title: title,
+                        name: name,
+                        identifier: "id:" + crypto.randomUUID(),
+                        categories: categories ? categories.map(c => c.name) : [],
+                        visibility: "PRIVATE",
+                        copyable: false,
+                        description: description,
+                        greeting: greeting,
+                        definition: definition ?? "",
+                        avatar_rel_path: avatar_file_name,
+                        img_gen_enabled: false,
+                        base_img_prompt: "",
+                        strip_img_prompt_from_msg: false,
+                        voice_id: "",
+                        default_voice_id: ""
+                    };
+                    fetch("https://plus.character.ai/chat/character/create/", {
+                        method: "POST",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            "authorization": AccessToken
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                        .then((res) => res.ok ? res.json() : Promise.reject(res))
+                        .then((data) => {
+                            if (!data.character || !data.character.external_id)
+                                return;
+                            // Inform the user
+                            const infoContainer = document.querySelector('.cait_info-cont');
+                            const infoBody = infoContainer.querySelector('.caiti-body');
+                            infoBody.innerHTML = `
+                                <p>
+                                    Your private character;
+                                    <br /><br />
+                                    <a href="https://beta.character.ai/chat2?char=${data.character.external_id}" target="_blank">Old design link</a>
+                                    <br /><br />
+                                    <a href="https://character.ai/chat/${data.character.external_id}" target="_blank">Redesign link</a>
+                                </p>
+                            `;
+                            infoContainer.classList.add('active');
+                        })
+                        .catch(err => console.log(err));
                 }
             })
             .catch(err => console.log(err));

@@ -13,8 +13,7 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "/scripts/xhook.min.js",
-                "/scripts/wsHook.js",
+                "/scripts/intercept.js",
                 "/ReadOffline.html"
             ],
             "matches": [

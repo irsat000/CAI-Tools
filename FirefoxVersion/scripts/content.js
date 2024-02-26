@@ -17,26 +17,17 @@
         }
     };
 
-    // AJAX hook
-    const xhook_lib__url = extAPI.runtime.getURL("scripts/xhook.min.js");
-    const xhookScript = document.createElement("script");
-    xhookScript.crossOrigin = "anonymous";
-    xhookScript.id = "xhook";
-    xhookScript.onload = function () {
+    // xhook + wsHook
+    const intercept_lib__url = extAPI.runtime.getURL("scripts/intercept.js");
+    const interceptHookScript = document.createElement("script");
+    interceptHookScript.crossOrigin = "anonymous";
+    interceptHookScript.id = "xhook";
+    interceptHookScript.onload = function () {
     };
-    xhookScript.src = xhook_lib__url;
-    // Web socket hook
-    const wsHook_lib__url = extAPI.runtime.getURL("scripts/wsHook.js");
-    const wsHookScript = document.createElement("script");
-    wsHookScript.crossOrigin = "anonymous";
-    wsHookScript.id = "wsHook";
-    wsHookScript.onload = function () {
-    };
-    wsHookScript.src = wsHook_lib__url;
-    // Insert hooks
+    interceptHookScript.src = intercept_lib__url;
+    // Insert both hooks
     const firstScript = document.getElementsByTagName("script")[0];
-    firstScript.parentNode.insertBefore(xhookScript, firstScript);
-    firstScript.parentNode.insertBefore(wsHookScript, firstScript);
+    firstScript.parentNode.insertBefore(interceptHookScript, firstScript);
 
     // Run at refresh or start as well
     handleLocationChange(null, { lastHref: '' });
@@ -432,7 +423,7 @@
                             <li data-cait_type='character_hybrid'>Character (json)</li>
                             <li data-cait_type='character_card'>Character Card (png)</li>
                             <li data-cait_type='character_settings'>Show settings</li>
-                            <li data-cait_type='character_copy'>Make Private Copy</li>
+                            <li data-cait_type='character_copy'>Create Private Copy (NEW!)</li>
                         </ul>
                         <h6>This conversation</h6>
                         <span class='cait_progressInfo'>(Loading...)</span>
@@ -507,6 +498,7 @@
             const AccessToken = getAccessToken();
             if (!AccessToken) {
                 alert("Access Token is not ready yet.");
+                return;
             }
 
             // Add active class to show
@@ -771,7 +763,7 @@
                     close_caitMemoryManagerModal();
                 } catch (error) {
                     console.log("Screenshot this error please; ", error);
-                    alert("Couldn't be saved, please report on github if you don't know the reason");
+                    alert("Couldn't be saved. Check console for error using F12 and Console tab, then please report on github.");
                 }
             });
 

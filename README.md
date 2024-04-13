@@ -6,7 +6,7 @@ Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkh
 
 Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
 
-Patreon for donation: https://www.patreon.com/Irsat
+Patreon for Premium and donations: https://www.patreon.com/Irsat
 
 Note: Mobile phone users can use Kiwi browser and download the extension from Chrome Store.
 
@@ -23,6 +23,9 @@ Character AI developers are constantly updating the website. This comes with man
 - Chat duplication doesn't work on Firefox because of Firefox's extremely strict WebSocket policies or whatever. It doesn't even give me error message
 
 # Feature List
+###### Saved Character (premium)
+You can save characters in different categories for easy access. You no longer need to scroll down to find a character.
+
 ###### Background Manager (premium)
 Activate or disable Main and Roleplay background however you wish. Roleplay backgrounds work with the message input, if you start with "##" and start typing for a keyword, it will search in your custom and starter roleplay background list keywords. Upon clicking on a keyword, it will change the background. You could create a huge library of your own. Image links are strongly recommended if you don't want delays or lags, try Imgur or other image upload sites. (Doesn't support legacy website.)
 ###### Font Manager (premium)

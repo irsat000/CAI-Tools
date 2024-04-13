@@ -1,5 +1,5 @@
 # CAI Tools
-Character.AI now has extra features. Background, Font and Memory Manager, chat and character cloning, importign characters, saving chats and characters!
+Character.AI now has extra features. Chacter catalog, Background, Font and Memory Manager, chat and character cloning, importing characters, saving chats and characters!
 
 ###### Links
 Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje?hl=en
@@ -23,7 +23,7 @@ Character AI developers are constantly updating the website. This comes with man
 - Chat duplication doesn't work on Firefox because of Firefox's extremely strict WebSocket policies or whatever. It doesn't even give me error message
 
 # Feature List
-###### Saved Character (premium)
+###### Character Catalog (premium)
 You can save characters in different categories for easy access. You no longer need to scroll down to find a character.
 
 ###### Background Manager (premium)

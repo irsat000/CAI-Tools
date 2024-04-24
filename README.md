@@ -26,10 +26,12 @@ Character AI developers are constantly updating the website. This comes with man
 ###### Character Catalog (premium)
 You can save characters in different categories for easy access. You no longer need to scroll down to find a character.
 
+###### Big Avatars
+You can change the size of avatars in your chats. They can also be animated now.
 ###### Background Manager (premium)
 Activate or disable Main and Roleplay background however you wish. Roleplay backgrounds work with the message input, if you start with "##" and start typing for a keyword, it will search in your custom and starter roleplay background list keywords. Upon clicking on a keyword, it will change the background. You could create a huge library of your own. Image links are strongly recommended if you don't want delays or lags, try Imgur or other image upload sites. (Doesn't support legacy website.)
 ###### Font Manager (premium)
-Change your text sizes and font families for a better experience, especially if you have bad eyes.
+Change your text sizes, font families and text colors for a better experience.
 ###### Character Import (premium)
 You can import character cards and .json files and it will create a private character with the those settings. Character.ai, V1 and V2 cards should work, not tested with others if there are any. https://chub.ai recommended for having many SFW options.
 ###### Memory Manager
@@ -40,6 +42,8 @@ It downloads the character file in formats supported by other AI platforms, such
 It downloads the character card. Only works on characters who have an avatar. You can further edit this card in https://zoltanai.github.io/character-editor/
 ###### Show Settings
 Opens a box to show you all the settings you are allowed to see. Currently, only definitions might be hidden from you at most.
+###### Import chat
+Import chats from Oobabooga, Tavern/SillyTavern and Offline chat files.
 ###### Download as Oobabooga chat
 It downloads the conversation in Oobabooga chat format. You can continue the conversation in Oobabooga with it.
 ###### Download as Tavern chat
@@ -47,7 +51,7 @@ It downloads the conversation in Tavern chat format. You can continue the conver
 ###### Download as definition/example chat
 This turns the conversation into example chat/definition format so you can use it in CAI and other AI chat platforms. It downloads a .txt file, which is a text document. All you need to do is copy paste the content.
 ###### Download to read offline
-It downloads an .html file which is a web page. You can read your conversation offline with this file.
+It downloads an .html file which is a web page. You can read your conversation offline with this file. You can also set a background in the offline chat.
 ###### Download History to read offline
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.
 

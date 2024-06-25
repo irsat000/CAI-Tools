@@ -2,13 +2,13 @@
 Character.AI now has extra features. Chacter catalog, Background, Font and Memory Manager, chat and character cloning, importing characters, saving chats and characters!
 
 ###### Links
-Chrome store link: https://chrome.google.com/webstore/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje?hl=en
+Chrome store link: https://chromewebstore.google.com/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje
 
-Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools/?utm_source=addons.mozilla.org&utm_medium=referral&utm_content=search
+Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools
 
 Patreon for Premium and donations: https://www.patreon.com/Irsat
 
-Note: Mobile phone users can use Kiwi browser and download the extension from Chrome Store.
+Note: Mobile phone users can use Firefox mobile or Kiwi browser.
 
 # How to
 Download the extension from extension stores. When inside a chat page, you will see a button named CAI Tools on top right corner. Click on the button to open the CAI Tools menu. You will see all the features in there.
@@ -17,10 +17,10 @@ Download the extension from extension stores. When inside a chat page, you will 
 Go to Patreon page and become a free member. When you do the Unlock Premium action in the extension's menu, you will receive 7-day free trial. If you like it or want to support me, you can upgrade your membership. If you are a paid member of any tier, starting with only $3, you will have access to Premium features as long as you are a member.
 
 # News
-Character AI developers are constantly updating the website. This comes with many new issues for this extension and I would like to have your new Github issues or emails for reporting. Feature requests are also welcome.
+v2.5.0 brought Chat Summary feature. Upcoming is Custom History feature.
 
 # Known problems
-- Chat duplication doesn't work on Firefox because of Firefox's extremely strict WebSocket policies or whatever. It doesn't even give me error message
+None known at the moment.
 
 # Feature List
 ###### Character Catalog (premium)

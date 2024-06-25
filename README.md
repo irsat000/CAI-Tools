@@ -17,7 +17,7 @@ Download the extension from extension stores. When inside a chat page, you will 
 Go to Patreon page and become a free member. When you do the Unlock Premium action in the extension's menu, you will receive 7-day free trial. If you like it or want to support me, you can upgrade your membership. If you are a paid member of any tier, starting with only $3, you will have access to Premium features as long as you are a member.
 
 # News
-v2.5.0 brought Chat Summary feature. Upcoming is Custom History feature.
+v2.5.0 brought Chat Summary feature. Character Import has become free. Upcoming update is for Custom History feature.
 
 # Known problems
 None known at the moment.
@@ -25,14 +25,15 @@ None known at the moment.
 # Feature List
 ###### Character Catalog (premium)
 You can save characters in different categories for easy access. You no longer need to scroll down to find a character.
-
 ###### Big Avatars
 You can change the size of avatars in your chats. They can also be animated now.
 ###### Background Manager (premium)
 Activate or disable Main and Roleplay background however you wish. Roleplay backgrounds work with the message input, if you start with "##" and start typing for a keyword, it will search in your custom and starter roleplay background list keywords. Upon clicking on a keyword, it will change the background. You could create a huge library of your own. Image links are strongly recommended if you don't want delays or lags, try Imgur or other image upload sites. (Doesn't support legacy website.)
 ###### Font Manager (premium)
 Change your text sizes, font families and text colors for a better experience.
-###### Character Import (premium)
+###### Chat Summary
+Click one button to summarize the chat using ChatGPT. It's more efficient than Memory Manager, but has limitations from ChatGPT.
+###### Character Import
 You can import character cards and .json files and it will create a private character with the those settings. Character.ai, V1 and V2 cards should work, not tested with others if there are any. https://chub.ai recommended for having many SFW options.
 ###### Memory Manager
 Reminds the character whatever you want every X message. You can choose the frequency. You can activate or deactivate it in the menu. Remind the character about history, settings, plot, scenario, anything.

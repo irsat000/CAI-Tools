@@ -17,12 +17,16 @@ Download the extension from extension stores. When inside a chat page, you will 
 Go to Patreon page and become a free member. When you do the Unlock Premium action in the extension's menu, you will receive 7-day free trial. If you like it or want to support me, you can upgrade your membership. If you are a paid member of any tier, starting with only $3, you will have access to Premium features as long as you are a member.
 
 # News
-v2.5.0 brought Chat Summary feature. Character Import has become free. Upcoming update is for Custom History feature.
+v2.6.0 brought Custom History.
+v2.5.1 fixed the gpt prompt importing as chat summary problem.
+v2.5.0 brought Chat Summary feature. Character Import has become free.
 
 # Known problems
-None known at the moment.
+Chat Summary may not return summaries due to failing conversation request to ChatGPT.
 
 # Feature List
+###### Custom History (premium)
+Save chats in this history panel and edit the title.
 ###### Character Catalog (premium)
 You can save characters in different categories for easy access. You no longer need to scroll down to find a character.
 ###### Big Avatars

@@ -18,8 +18,11 @@ Go to Patreon page and become a free member. When you do the Unlock Premium acti
 
 # News
 -v2.6.1 fixes Firefox problem that doesn't let you save more than one history in custom history.
+
 -v2.6.0 brought Custom History.
+
 -v2.5.1 fixed the gpt prompt importing as chat summary problem.
+
 -v2.5.0 brought Chat Summary feature. Character Import has become free.
 
 # Known problems

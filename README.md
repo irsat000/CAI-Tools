@@ -1,12 +1,12 @@
 # CAI Tools
-Character.AI now has extra features. Chacter catalog, Background, Font and Memory Manager, chat and character cloning, importing characters, saving chats and characters!
+Character.AI now has extra features. Chacter catalog, Custom History, Background, Font and Memory Manager. Cloning, saving and importing chats and characters.
 
 ###### Links
 Chrome store link: https://chromewebstore.google.com/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje
 
 Firefox store link: https://addons.mozilla.org/en-US/firefox/addon/cai-tools
 
-Patreon for Premium and donations: https://www.patreon.com/Irsat
+Patreon for Premium, donations and free trial: https://www.patreon.com/Irsat
 
 Note: Mobile phone users can use Firefox mobile or Kiwi browser.
 
@@ -17,9 +17,10 @@ Download the extension from extension stores. When inside a chat page, you will 
 Go to Patreon page and become a free member. When you do the Unlock Premium action in the extension's menu, you will receive 7-day free trial. If you like it or want to support me, you can upgrade your membership. If you are a paid member of any tier, starting with only $3, you will have access to Premium features as long as you are a member.
 
 # News
-v2.6.0 brought Custom History.
-v2.5.1 fixed the gpt prompt importing as chat summary problem.
-v2.5.0 brought Chat Summary feature. Character Import has become free.
+-v2.6.1 fixes Firefox problem that doesn't let you save more than one history in custom history.
+-v2.6.0 brought Custom History.
+-v2.5.1 fixed the gpt prompt importing as chat summary problem.
+-v2.5.0 brought Chat Summary feature. Character Import has become free.
 
 # Known problems
 Chat Summary may not return summaries due to failing conversation request to ChatGPT.
@@ -35,8 +36,8 @@ You can change the size of avatars in your chats. They can also be animated now.
 Activate or disable Main and Roleplay background however you wish. Roleplay backgrounds work with the message input, if you start with "##" and start typing for a keyword, it will search in your custom and starter roleplay background list keywords. Upon clicking on a keyword, it will change the background. You could create a huge library of your own. Image links are strongly recommended if you don't want delays or lags, try Imgur or other image upload sites. (Doesn't support legacy website.)
 ###### Font Manager (premium)
 Change your text sizes, font families and text colors for a better experience.
-###### Chat Summary
-Click one button to summarize the chat using ChatGPT. It's more efficient than Memory Manager, but has limitations from ChatGPT.
+###### Summarize
+Click one button to summarize the chat using ChatGPT. Edit the prompt freely. It's more efficient than Memory Manager, but has limitations from ChatGPT.
 ###### Character Import
 You can import character cards and .json files and it will create a private character with the those settings. Character.ai, V1 and V2 cards should work, not tested with others if there are any. https://chub.ai recommended for having many SFW options.
 ###### Memory Manager
@@ -61,6 +62,8 @@ It downloads an .html file which is a web page. You can read your conversation o
 It downloads an .html file which is a web page. You can read all your conversations offline with this file.
 
 ### Misc
+###### Use last X
+Limit the chat features by the last X amount of messages. Applies to Import Chat as well.
 ###### Drag and Remove Button
 You can drag the button by its appendage on the left. If tapped 3 times consecutively on the appendage, it will remove the button until page reload.
 ###### Passive

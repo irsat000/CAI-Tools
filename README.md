@@ -1,6 +1,9 @@
 # CAI Tools
 Character.AI now has extra features. Chacter catalog, Custom History, Background, Font and Memory Manager. Cloning, saving and importing chats and characters.
 
+###### Github
+This repository is only for bug reports, feature requests and questions. Code here is not up-to-date.
+
 ###### Links
 Chrome store link: https://chromewebstore.google.com/detail/cai-tools/nbhhncgkhacdaaccjbbadkpdiljedlje
 

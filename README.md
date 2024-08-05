@@ -31,6 +31,8 @@ Go to Patreon page and become a free member. When you do the Unlock Premium acti
 # Known problems
 Chat Summary may not return summaries due to failing conversation request to ChatGPT.
 
+Chat may not load on the CAI Tools menu, history has more chance of failing.
+
 # Feature List
 ###### Custom History (premium)
 Save chats in this history panel and edit the title.

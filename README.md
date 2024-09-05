@@ -1,5 +1,4 @@
 # CAI Tools
-Character.AI now has extra features. Chacter catalog, Custom History, Background, Font and Memory Manager. Cloning, saving and importing chats and characters.
 
 ###### Github
 This repository is only for bug reports, feature requests and questions. Code here is not up-to-date.
@@ -13,25 +12,12 @@ Patreon for Premium, donations and free trial: https://www.patreon.com/Irsat
 
 Note: Mobile phone users can use Firefox mobile or Kiwi browser.
 
-# How to
-Download the extension from extension stores. When inside a chat page, you will see a button named CAI Tools on top right corner. Click on the button to open the CAI Tools menu. You will see all the features in there.
-
 # Premium - How to unlock
 Go to Patreon page and become a free member. When you do the Unlock Premium action in the extension's menu, you will receive 7-day free trial. If you like it or want to support me, you can upgrade your membership. If you are a paid member of any tier, starting with only $3, you will have access to Premium features as long as you are a member.
 
 # News
--v2.6.1 fixes Firefox problem that doesn't let you save more than one history in custom history.
-
--v2.6.0 brought Custom History.
-
--v2.5.1 fixed the gpt prompt importing as chat summary problem.
-
--v2.5.0 brought Chat Summary feature. Character Import has become free.
 
 # Known problems
-Chat Summary may not return summaries due to failing conversation request to ChatGPT.
-
-Chat may not load on the CAI Tools menu, history has more chance of failing.
 
 # Feature List
 ###### Custom History (premium)
@@ -44,12 +30,11 @@ You can change the size of avatars in your chats. They can also be animated now.
 Activate or disable Main and Roleplay background however you wish. Roleplay backgrounds work with the message input, if you start with "##" and start typing for a keyword, it will search in your custom and starter roleplay background list keywords. Upon clicking on a keyword, it will change the background. You could create a huge library of your own. Image links are strongly recommended if you don't want delays or lags, try Imgur or other image upload sites. (Doesn't support legacy website.)
 ###### Font Manager (premium)
 Change your text sizes, font families and text colors for a better experience.
-###### Summarize
-Click one button to summarize the chat using ChatGPT. Edit the prompt freely. It's more efficient than Memory Manager, but has limitations from ChatGPT.
 ###### Character Import
 You can import character cards and .json files and it will create a private character with the those settings. Character.ai, V1 and V2 cards should work, not tested with others if there are any. https://chub.ai recommended for having many SFW options.
 ###### Memory Manager
-Reminds the character whatever you want every X message. You can choose the frequency. You can activate or deactivate it in the menu. Remind the character about history, settings, plot, scenario, anything.
+v1: Reminds the character whatever you want every X message. You can choose the frequency. You can activate or deactivate it in the menu. Remind the character about history, settings, plot, scenario, anything.
+v2: Reminds every message, cleans it up after you send another message
 ###### Download Character (json)
 It downloads the character file in formats supported by other AI platforms, such as Tavern and Oobabooga.
 ###### Download Character Card (png)
@@ -74,8 +59,6 @@ It downloads an .html file which is a web page. You can read all your conversati
 Limit the chat features by the last X amount of messages. Applies to Import Chat as well.
 ###### Drag and Remove Button
 You can drag the button by its appendage on the left. If tapped 3 times consecutively on the appendage, it will remove the button until page reload.
-###### Passive
-Shows up to 999 chats in "View Chat Histories". You can download it all. The limit they put was originally 50.
 
 # Preview
 ![menuPreview](https://github.com/irsat000/CAI-Tools/assets/38238671/f348a6e3-b34e-46e5-b2cf-5d671db168d4)
